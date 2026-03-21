@@ -58,14 +58,14 @@ async function getValidAccessToken(ctx: ActionCtx, athleteId: Id<'athletes'>): P
 // Helper: build upsert args from a Strava activity summary
 // ---------------------------------------------------------------------------
 
-interface AthleteProfile {
+export interface AthleteProfile {
   sex?: 'M' | 'F';
   restingHr?: number;
   maxHr?: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function buildActivityArgs(
+export function buildActivityArgs(
   athleteId: Id<'athletes'>,
   activity: StravaActivitySummary,
   athlete: AthleteProfile = {},

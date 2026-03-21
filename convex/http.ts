@@ -3,7 +3,8 @@ import { httpRouter } from 'convex/server';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { httpAction } from './_generated/server';
-import { deriveActivityBucket } from './lib/stravaApi';
+import type { StravaActivitySummary, StravaLap, StravaSplit } from './lib/stravaApi';
+import { buildActivityArgs } from './stravaSync';
 
 const http = httpRouter();
 
@@ -25,6 +26,50 @@ function jsonOk(data: unknown): Response {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+// ---------------------------------------------------------------------------
+// Coerce raw Strava JSON (from n8n) into the typed StravaActivitySummary shape
+// so we can reuse buildActivityArgs (shared with stravaSync).
+// ---------------------------------------------------------------------------
+
+function str(v: unknown, fallback = ''): string {
+  return typeof v === 'string' ? v : fallback;
+}
+
+function num(v: unknown, fallback = 0): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function toStravaSummary(raw: Record<string, unknown>): StravaActivitySummary {
+  const summary: StravaActivitySummary = {
+    id: num(raw['id']),
+    name: str(raw['name'], 'Untitled'),
+    sport_type: str(raw['sport_type'], str(raw['type'], 'Unknown')),
+    start_date: str(raw['start_date'], new Date().toISOString()),
+    start_date_local: str(raw['start_date_local'], str(raw['start_date'])),
+    timezone: str(raw['timezone']),
+    distance: num(raw['distance']),
+    moving_time: num(raw['moving_time']),
+    elapsed_time: num(raw['elapsed_time']),
+    total_elevation_gain: num(raw['total_elevation_gain']),
+    has_heartrate: Boolean(raw['has_heartrate']),
+    average_speed: num(raw['average_speed']),
+    max_speed: num(raw['max_speed']),
+  };
+  if (raw['average_heartrate'] != null) summary.average_heartrate = num(raw['average_heartrate']);
+  if (raw['max_heartrate'] != null) summary.max_heartrate = num(raw['max_heartrate']);
+  if (raw['average_cadence'] != null) summary.average_cadence = num(raw['average_cadence']);
+  if (raw['average_watts'] != null) summary.average_watts = num(raw['average_watts']);
+  if (raw['average_temp'] != null) summary.average_temp = num(raw['average_temp']);
+  if (raw['calories'] != null) summary.calories = num(raw['calories']);
+  if (raw['suffer_score'] != null) summary.suffer_score = num(raw['suffer_score']);
+  if (typeof raw['gear_id'] === 'string' && raw['gear_id']) summary.gear_id = raw['gear_id'];
+  if (Array.isArray(raw['splits_metric']))
+    summary.splits_metric = raw['splits_metric'] as StravaSplit[];
+  if (Array.isArray(raw['laps'])) summary.laps = raw['laps'] as StravaLap[];
+  return summary;
 }
 
 // ---------------------------------------------------------------------------
@@ -71,43 +116,14 @@ http.route({
       return jsonError('athleteId and stravaActivity required', 400);
     }
 
-    const a = body.stravaActivity as Record<string, string | number | boolean | null | undefined>;
-    const sportType = String(a['sport_type'] ?? a['type'] ?? 'Unknown');
+    const raw = body.stravaActivity;
+    const activity = toStravaSummary(raw);
+    const args = buildActivityArgs(body.athleteId as Id<'athletes'>, activity);
 
     try {
       const activityId = await ctx.runMutation(internal.activities.upsertFromStrava, {
-        athleteId: body.athleteId as Id<'athletes'>,
-        stravaActivityId: String(a['id']),
-        name: String(a['name'] ?? 'Untitled'),
-        sportType,
-        activityBucket: deriveActivityBucket(sportType),
-        startDate: String(a['start_date'] ?? new Date().toISOString()),
-        distanceMeters: Number(a['distance'] ?? 0),
-        movingTimeSec: Number(a['moving_time'] ?? 0),
-        elapsedTimeSec: Number(a['elapsed_time'] ?? 0),
+        ...args,
         processingStatus: 'analyzing',
-        ...(a['start_date_local'] ? { startDateLocal: String(a['start_date_local']) } : {}),
-        ...(a['timezone'] ? { timezone: String(a['timezone']) } : {}),
-        ...(a['total_elevation_gain'] != null
-          ? { totalElevationGainM: Number(a['total_elevation_gain']) }
-          : {}),
-        ...(a['has_heartrate'] != null ? { hasHeartrate: Boolean(a['has_heartrate']) } : {}),
-        ...(a['average_heartrate'] != null
-          ? { averageHeartrate: Number(a['average_heartrate']) }
-          : {}),
-        ...(a['max_heartrate'] != null ? { maxHeartrate: Number(a['max_heartrate']) } : {}),
-        ...(a['average_speed'] != null ? { averageSpeed: Number(a['average_speed']) } : {}),
-        ...(a['max_speed'] != null ? { maxSpeed: Number(a['max_speed']) } : {}),
-        ...(a['average_cadence'] != null ? { averageCadence: Number(a['average_cadence']) } : {}),
-        ...(a['average_watts'] != null ? { averageWatts: Number(a['average_watts']) } : {}),
-        ...(a['average_temp'] != null ? { averageTempC: Number(a['average_temp']) } : {}),
-        ...(a['calories'] != null ? { calories: Number(a['calories']) } : {}),
-        ...(a['suffer_score'] != null ? { sufferScore: Number(a['suffer_score']) } : {}),
-        ...(a['gear_id'] ? { stravaGearId: String(a['gear_id']) } : {}),
-        ...(body.stravaActivity['splits_metric'] != null
-          ? { splitsMetric: body.stravaActivity['splits_metric'] }
-          : {}),
-        ...(body.stravaActivity['laps'] != null ? { laps: body.stravaActivity['laps'] } : {}),
       });
       return jsonOk({ activityId });
     } catch (err) {
@@ -250,6 +266,13 @@ http.route({
         activityId,
         processingStatus: 'complete',
       });
+
+      const activity = await ctx.runQuery(internal.activities.getByDocId, { activityId });
+      if (activity) {
+        await ctx.runMutation(internal.weeklyAnalyses.scheduleRegeneration, {
+          athleteId: activity.athleteId,
+        });
+      }
 
       return jsonOk({ analysisId });
     } catch (err) {

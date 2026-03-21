@@ -65,12 +65,22 @@ export const generateWeeklySummary = internalAction({
       athleteId: args.athleteId,
     });
 
+    const existingAnalysis = await ctx.runQuery(internal.weeklyAnalyses.getForAthleteWeekInternal, {
+      athleteId: args.athleteId,
+      weekStartLocal,
+    });
+
     const totalDist = weekActivities.reduce((s, a) => s + a.distanceMeters, 0);
     const totalTime = weekActivities.reduce((s, a) => s + a.movingTimeSec, 0);
     const totalElev = weekActivities.reduce((s, a) => s + (a.totalElevationGainM ?? 0), 0);
     const totalTrimp = weekActivities.reduce((s, a) => s + (a.trimp ?? 0), 0);
 
-    const prompt = `Generate a weekly training summary. Return JSON with:
+    const hasExisting = existingAnalysis?.executiveSummary;
+    const taskInstruction = hasExisting
+      ? 'Update the weekly training summary below, incorporating the latest activity data. Preserve insights from the previous summary that are still relevant, and weave in observations about the new session(s).'
+      : 'Generate a weekly training summary.';
+
+    const prompt = `${taskInstruction} Return JSON with:
 - executiveSummary (3-5 sentences covering volume, intensity distribution, standout efforts, recovery balance)
 - voiceSummary (1-2 sentence audio-friendly summary)
 
@@ -91,7 +101,8 @@ ${weekActivities
   .join('\n')}
 
 ${athlete?.goalText ? `## Athlete Goal\n${athlete.goalText}` : ''}
-${formSnapshot ? `## Current Form\n- CTL: ${String(formSnapshot.ctl)}, ATL: ${String(formSnapshot.atl)}, TSB: ${String(formSnapshot.tsb)}${formSnapshot.acwr ? `, ACWR: ${String(formSnapshot.acwr)}` : ''}` : ''}`;
+${formSnapshot ? `## Current Form\n- CTL: ${String(formSnapshot.ctl)}, ATL: ${String(formSnapshot.atl)}, TSB: ${String(formSnapshot.tsb)}${formSnapshot.acwr ? `, ACWR: ${String(formSnapshot.acwr)}` : ''}` : ''}
+${hasExisting ? `## Previous Weekly Summary (refine and update with the new data)\n${String(existingAnalysis.executiveSummary)}` : ''}`;
 
     try {
       const result = await generateJSON<WeeklySummaryResult>(prompt, {
