@@ -577,6 +577,21 @@ export const fetchStreamsOnDemand = action({
 });
 
 // ---------------------------------------------------------------------------
+// triggerFormCompute: public action to manually trigger form snapshot computation.
+// Useful when backfill ran but computeFormSnapshots failed silently.
+// ---------------------------------------------------------------------------
+
+export const triggerFormCompute = action({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    await ctx.scheduler.runAfter(0, internal.stravaSync.computeFormSnapshots, {
+      athleteId: args.athleteId,
+    });
+    return { scheduled: true };
+  },
+});
+
+// ---------------------------------------------------------------------------
 // manualFullSync: one-off full sync for an athlete.
 // Fetches activity detail (splits, laps) + streams for every activity.
 // API cost: 2 calls per activity (detail + streams).
