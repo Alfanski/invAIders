@@ -219,87 +219,171 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 }
 
 // ---------------------------------------------------------------------------
-// Create test activity
+// GPX generation with HR, cadence, elevation
 // ---------------------------------------------------------------------------
 
-interface CreateActivityParams {
-  name: string;
-  type: string;
-  sport_type: string;
-  start_date_local: string;
-  elapsed_time: number;
-  distance: number;
-  description: string;
-}
-
-function parseArgs(): Partial<CreateActivityParams> {
-  const args = process.argv.slice(2);
-  const parsed: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
-    const key = args[i]?.replace(/^--/, '');
-    const val = args[i + 1];
-    if (key && val) parsed[key] = val;
-  }
-  return parsed as Partial<CreateActivityParams>;
-}
-
 function randomBetween(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return min + Math.random() * (max - min);
 }
 
-async function createActivity(
-  accessToken: string,
-  overrides: Partial<CreateActivityParams>,
-): Promise<void> {
-  const distanceM = randomBetween(3000, 15000);
-  const elapsedSec = Math.round(distanceM / (randomBetween(8, 14) / 3.6));
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - Math.round(elapsedSec / 60) - 10);
+function generateGpx(): { gpx: string; distanceKm: number; durationMin: number } {
+  const startLat = 48.135;
+  const startLng = 11.58;
+  const startTime = new Date();
+  startTime.setMinutes(startTime.getMinutes() - 35);
 
-  const params: CreateActivityParams = {
-    name: `Test Run ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
-    type: 'Run',
-    sport_type: 'Run',
-    start_date_local: now.toISOString(),
-    elapsed_time: elapsedSec,
-    distance: distanceM,
-    description: 'Auto-generated test activity from strava-test-activity script',
-    ...overrides,
-  };
+  const segmentKm = 1.25;
+  const totalKm = segmentKm * 4;
+  const paceSecPerKm = randomBetween(310, 350);
+  const totalSec = Math.round(totalKm * paceSecPerKm);
+  const pointInterval = 5;
+  const totalPoints = Math.floor(totalSec / pointInterval);
+  const pointsPerSeg = Math.floor(totalPoints / 4);
 
-  console.log('\n🏃 Creating test activity...');
-  console.log(`   Name:     ${params.name}`);
-  console.log(`   Type:     ${params.sport_type}`);
-  console.log(`   Distance: ${(params.distance / 1000).toFixed(1)} km`);
-  console.log(
-    `   Duration: ${Math.floor(params.elapsed_time / 60)}:${String(params.elapsed_time % 60).padStart(2, '0')}`,
-  );
-  console.log(`   Start:    ${params.start_date_local}`);
+  const latPerPoint = segmentKm / 111.0 / pointsPerSeg;
+  const lngPerPoint = segmentKm / 74.3 / pointsPerSeg;
 
-  const body = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    body.set(k, String(v));
+  let lat = startLat;
+  let lng = startLng;
+  let elev = 520 + randomBetween(-5, 5);
+  let hr = 115;
+  let cad = 78;
+
+  const points: string[] = [];
+
+  function addPoint(i: number): void {
+    const t = new Date(startTime.getTime() + i * pointInterval * 1000);
+    const progress = i / totalPoints;
+
+    if (progress < 0.1) hr = 115 + progress * 350;
+    else if (progress < 0.85) hr = 148 + randomBetween(-5, 5) + progress * 15;
+    else hr = 160 - (progress - 0.85) * 200 + randomBetween(-3, 3);
+    hr = Math.max(110, Math.min(185, Math.round(hr)));
+
+    cad = Math.round(82 + randomBetween(-3, 3) + (progress < 0.85 ? progress * 8 : -5));
+    elev += randomBetween(-0.5, 0.5);
+
+    points.push(
+      `      <trkpt lat="${lat.toFixed(6)}" lon="${lng.toFixed(6)}">` +
+        `<ele>${elev.toFixed(1)}</ele>` +
+        `<time>${t.toISOString()}</time>` +
+        `<extensions><gpxtpx:TrackPointExtension>` +
+        `<gpxtpx:hr>${hr}</gpxtpx:hr>` +
+        `<gpxtpx:cad>${cad}</gpxtpx:cad>` +
+        `</gpxtpx:TrackPointExtension></extensions>` +
+        `</trkpt>`,
+    );
   }
 
-  const res = await fetch('https://www.strava.com/api/v3/activities', {
+  for (let i = 0; i < pointsPerSeg; i++) {
+    addPoint(i);
+    lng += lngPerPoint;
+  }
+  for (let i = 0; i < pointsPerSeg; i++) {
+    addPoint(pointsPerSeg + i);
+    lat += latPerPoint;
+    elev += 0.15;
+  }
+  for (let i = 0; i < pointsPerSeg; i++) {
+    addPoint(pointsPerSeg * 2 + i);
+    lng -= lngPerPoint;
+  }
+  for (let i = 0; i < pointsPerSeg; i++) {
+    addPoint(pointsPerSeg * 3 + i);
+    lat -= latPerPoint;
+    elev -= 0.15;
+  }
+
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+     creator="mAIcoach-test" version="1.1">
+  <trk>
+    <name>Test Run ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</name>
+    <type>running</type>
+    <trkseg>
+${points.join('\n')}
+    </trkseg>
+  </trk>
+</gpx>`;
+
+  return { gpx, distanceKm: totalKm, durationMin: Math.round(totalSec / 60) };
+}
+
+// ---------------------------------------------------------------------------
+// Upload GPX to Strava
+// ---------------------------------------------------------------------------
+
+async function uploadActivity(accessToken: string): Promise<void> {
+  const { gpx, distanceKm, durationMin } = generateGpx();
+
+  console.log('\n🏃 Uploading test activity with GPS + HR + cadence...');
+  console.log(`   Distance: ${distanceKm.toFixed(1)} km`);
+  console.log(`   Duration: ~${durationMin} min`);
+
+  const boundary = '----mAIcoachBoundary' + Date.now();
+  const fileName = 'test-run.gpx';
+
+  const bodyParts = [
+    `--${boundary}\r\nContent-Disposition: form-data; name="data_type"\r\n\r\ngpx`,
+    `--${boundary}\r\nContent-Disposition: form-data; name="activity_type"\r\n\r\nrun`,
+    `--${boundary}\r\nContent-Disposition: form-data; name="description"\r\n\r\nAuto-generated test with HR/cadence/GPS from mAIcoach script`,
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: application/gpx+xml\r\n\r\n${gpx}`,
+    `--${boundary}--`,
+  ];
+  const body = bodyParts.join('\r\n');
+
+  const res = await fetch('https://www.strava.com/api/v3/uploads', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
     },
     body,
   });
 
   if (!res.ok) {
     const errBody = await res.text();
-    throw new Error(`Failed to create activity (${res.status}): ${errBody}`);
+    throw new Error(`Upload failed (${res.status}): ${errBody}`);
   }
 
-  const activity = (await res.json()) as { id: number; name: string; distance: number };
-  console.log(`\n✅ Activity created!`);
-  console.log(`   Strava ID:  ${activity.id}`);
-  console.log(`   View:       https://www.strava.com/activities/${activity.id}`);
+  const upload = (await res.json()) as { id: number; status: string; activity_id: number | null };
+  console.log(`\n📤 Upload accepted (ID: ${upload.id})`);
+  console.log(`   Status: ${upload.status}`);
+
+  console.log('\n⏳ Waiting for Strava to process the file...');
+  let activityId: number | null = null;
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const checkRes = await fetch(`https://www.strava.com/api/v3/uploads/${upload.id}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!checkRes.ok) continue;
+    const status = (await checkRes.json()) as {
+      status: string;
+      activity_id: number | null;
+      error: string | null;
+    };
+    if (status.error) {
+      throw new Error(`Strava processing error: ${status.error}`);
+    }
+    if (status.activity_id) {
+      activityId = status.activity_id;
+      break;
+    }
+    process.stdout.write('.');
+  }
+
+  if (!activityId) {
+    console.log('\n⚠️  Upload still processing. Check Strava manually.');
+    return;
+  }
+
+  console.log(`\n\n✅ Activity created!`);
+  console.log(`   Strava ID:  ${activityId}`);
+  console.log(`   View:       https://www.strava.com/activities/${activityId}`);
   console.log(`\n⏳ The Strava webhook should fire within a few seconds...`);
+  console.log(`   Watch the n8n pipeline at: https://lorenzo-hackathon.app.n8n.cloud`);
 }
 
 // ---------------------------------------------------------------------------
@@ -307,7 +391,7 @@ async function createActivity(
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  console.log('🚀 Strava Test Activity Creator\n');
+  console.log('🚀 Strava Test Activity Upload (GPX with HR + cadence)\n');
 
   const env = loadEnv();
   const clientId = env['STRAVA_CLIENT_ID'];
@@ -318,8 +402,7 @@ async function main(): Promise<void> {
   }
 
   const accessToken = await getAccessToken(clientId, clientSecret);
-  const overrides = parseArgs();
-  await createActivity(accessToken, overrides);
+  await uploadActivity(accessToken);
 }
 
 main().catch((err: unknown) => {
