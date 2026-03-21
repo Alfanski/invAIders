@@ -113,6 +113,8 @@ export default function FormPage(): ReactNode {
 
 function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
   const activities = useQuery(api.activities.listRecentForAthlete, { athleteId, limit: 200 });
+  const dailyPlan = useQuery(api.formAssessments.getLatestForAthlete, { athleteId });
+  const latestFormSnapshot = useQuery(api.formSnapshots.getLatestForAthlete, { athleteId });
 
   const formData = useMemo(() => {
     if (!activities) return null;
@@ -132,7 +134,21 @@ function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
 
   const engine = getCoachingEngine();
   const zone = engine.classifyForm(formData.current.tsb);
-  const recovery = computeRecovery(formData.hoursSinceLastActivity, formData.lastActivityTrimp);
+
+  const formSignals = latestFormSnapshot
+    ? {
+        tsb: latestFormSnapshot.tsb,
+        ...(latestFormSnapshot.acwr != null ? { acwr: latestFormSnapshot.acwr } : {}),
+      }
+    : { tsb: formData.current.tsb };
+
+  const recovery = computeRecovery(
+    formData.hoursSinceLastActivity,
+    formData.lastActivityTrimp,
+    formSignals,
+  );
+
+  const hasPlan = dailyPlan?.executiveSummary && dailyPlan.executiveSummary.length > 0;
 
   return (
     <main className="space-y-5">
@@ -165,9 +181,26 @@ function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
             <h3 className="text-xs font-semibold uppercase tracking-widest text-accent">
               Today&apos;s Plan
             </h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-glass-text-muted">
-              AI-powered daily recommendations will appear once the coaching pipeline is active.
-            </p>
+            {hasPlan ? (
+              <>
+                <p className="mt-1.5 text-sm leading-relaxed text-glass-text">
+                  {dailyPlan.executiveSummary}
+                </p>
+                {dailyPlan.recommendations.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {dailyPlan.recommendations.map((rec) => (
+                      <li key={rec} className="text-xs leading-relaxed text-glass-text-muted">
+                        &bull; {rec}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p className="mt-1.5 text-sm leading-relaxed text-glass-text-muted">
+                AI-powered daily recommendations will appear once the coaching pipeline is active.
+              </p>
+            )}
           </div>
         </div>
       </section>

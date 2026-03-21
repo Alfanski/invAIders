@@ -52,4 +52,33 @@ describe('computeRecovery', () => {
     const result = computeRecovery(200, 30);
     expect(result.recoveryPct).toBe(100);
   });
+
+  it('works without form signals (backward compatible)', () => {
+    const result = computeRecovery(24, 80);
+    expect(result.recoveryPct).toBeGreaterThan(0);
+  });
+
+  it('negative TSB reduces recovery percentage', () => {
+    const base = computeRecovery(20, 100);
+    const fatigued = computeRecovery(20, 100, { tsb: -25 });
+    expect(fatigued.recoveryPct).toBeLessThan(base.recoveryPct);
+  });
+
+  it('positive TSB boosts recovery percentage', () => {
+    const base = computeRecovery(20, 100);
+    const fresh = computeRecovery(20, 100, { tsb: 15 });
+    expect(fresh.recoveryPct).toBeGreaterThanOrEqual(base.recoveryPct);
+  });
+
+  it('high ACWR penalizes recovery', () => {
+    const base = computeRecovery(20, 100);
+    const spiked = computeRecovery(20, 100, { acwr: 1.8 });
+    expect(spiked.recoveryPct).toBeLessThan(base.recoveryPct);
+  });
+
+  it('sweet-spot ACWR gives a small bonus', () => {
+    const base = computeRecovery(20, 100);
+    const sweetSpot = computeRecovery(20, 100, { acwr: 1.0 });
+    expect(sweetSpot.recoveryPct).toBeGreaterThanOrEqual(base.recoveryPct);
+  });
 });

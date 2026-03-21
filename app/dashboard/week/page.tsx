@@ -161,10 +161,24 @@ function WeekContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
 
   const { start, end } = useMemo(getWeekBounds, []);
 
+  const weekStartLocal = useMemo(() => {
+    const s = new Date(start);
+    return s.toISOString().slice(0, 10);
+  }, [start]);
+
+  const weeklyAnalysis = useQuery(api.weeklyAnalyses.getForAthleteWeek, {
+    athleteId,
+    weekStartLocal,
+  });
+
   const week = useMemo(() => {
     if (!activities) return null;
-    return buildWeekData(activities, start, end);
-  }, [activities, start, end]);
+    const data = buildWeekData(activities, start, end);
+    if (weeklyAnalysis?.executiveSummary) {
+      data.aiSummary = weeklyAnalysis.executiveSummary;
+    }
+    return data;
+  }, [activities, start, end, weeklyAnalysis]);
 
   if (activities === undefined) return <LoadingSkeleton />;
 

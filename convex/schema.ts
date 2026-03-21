@@ -99,6 +99,17 @@ export default defineSchema({
         pointCount: v.number(),
       }),
     ),
+    stats: v.optional(
+      v.object({
+        heartrateBpm: v.optional(v.object({ min: v.number(), avg: v.number(), max: v.number() })),
+        velocitySmooth: v.optional(v.object({ min: v.number(), avg: v.number(), max: v.number() })),
+        altitudeM: v.optional(v.object({ min: v.number(), avg: v.number(), max: v.number() })),
+        cadenceRpm: v.optional(v.object({ min: v.number(), avg: v.number(), max: v.number() })),
+        watts: v.optional(v.object({ min: v.number(), avg: v.number(), max: v.number() })),
+        tempC: v.optional(v.object({ min: v.number(), avg: v.number(), max: v.number() })),
+        gradeSmooth: v.optional(v.object({ min: v.number(), avg: v.number(), max: v.number() })),
+      }),
+    ),
     updatedAt: v.number(),
   }).index('by_activity', ['activityId']),
 
@@ -204,6 +215,7 @@ export default defineSchema({
     ctl: v.number(),
     atl: v.number(),
     tsb: v.number(),
+    acwr: v.optional(v.number()),
     dailyTrimp: v.optional(v.number()),
     activityIds: v.optional(v.array(v.id('activities'))),
     computedAt: v.number(),

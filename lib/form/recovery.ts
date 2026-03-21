@@ -30,13 +30,51 @@ function getBand(trimp: number): RecoveryBand {
   return last;
 }
 
+export interface RecoveryInput {
+  hoursSinceLastActivity: number;
+  lastActivityTrimp: number;
+  tsb?: number;
+  acwr?: number;
+}
+
+/**
+ * Enhanced recovery model that factors in training form signals when available.
+ *
+ * Base: time-since-last-activity / TRIMP-band target (original model).
+ * Modifier 1 (TSB): negative TSB slows recovery (fatigued athletes recover slower),
+ *   positive TSB boosts it (well-rested athletes recover faster).
+ * Modifier 2 (ACWR): ratio > 1.5 ("danger zone") penalizes recovery;
+ *   ratio in 0.8-1.3 ("sweet spot") gives a small bonus.
+ */
 export function computeRecovery(
   hoursSinceLastActivity: number,
   lastActivityTrimp: number,
+  formSignals?: { tsb?: number; acwr?: number },
 ): RecoveryState {
   const band = getBand(lastActivityTrimp);
   const targetHours = (band.minHours + band.maxHours) / 2;
-  const rawPct = Math.min(1, hoursSinceLastActivity / targetHours);
+  let rawPct = Math.min(1, hoursSinceLastActivity / targetHours);
+
+  if (formSignals) {
+    const { tsb, acwr } = formSignals;
+
+    if (tsb !== undefined) {
+      // TSB modifier: ranges roughly from -0.15 (very fatigued) to +0.10 (fresh)
+      const tsbModifier = Math.max(-0.15, Math.min(0.1, tsb / 200));
+      rawPct = Math.min(1, Math.max(0, rawPct + tsbModifier));
+    }
+
+    if (acwr !== undefined) {
+      if (acwr > 1.5) {
+        // High ACWR = acute spike well above chronic baseline, penalize
+        const penalty = Math.min(0.15, (acwr - 1.5) * 0.3);
+        rawPct = Math.max(0, rawPct - penalty);
+      } else if (acwr >= 0.8 && acwr <= 1.3) {
+        rawPct = Math.min(1, rawPct + 0.03);
+      }
+    }
+  }
+
   const recoveryPct = Math.round(rawPct * 100);
 
   const readyFor: string[] = [];

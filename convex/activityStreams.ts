@@ -2,6 +2,8 @@ import { v } from 'convex/values';
 
 import { internalMutation, internalQuery, query } from './_generated/server';
 
+const streamStatEntry = v.object({ min: v.number(), avg: v.number(), max: v.number() });
+
 export const upsertForActivity = internalMutation({
   args: {
     activityId: v.id('activities'),
@@ -20,6 +22,17 @@ export const upsertForActivity = internalMutation({
       v.object({
         windowSec: v.number(),
         pointCount: v.number(),
+      }),
+    ),
+    stats: v.optional(
+      v.object({
+        heartrateBpm: v.optional(streamStatEntry),
+        velocitySmooth: v.optional(streamStatEntry),
+        altitudeM: v.optional(streamStatEntry),
+        cadenceRpm: v.optional(streamStatEntry),
+        watts: v.optional(streamStatEntry),
+        tempC: v.optional(streamStatEntry),
+        gradeSmooth: v.optional(streamStatEntry),
       }),
     ),
   },

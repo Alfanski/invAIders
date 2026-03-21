@@ -11,9 +11,13 @@ import {
   deriveActivityBucket,
   fetchActivitiesList,
   fetchActivityStreams,
+  fetchAthleteZones,
   refreshStravaToken,
   type StravaActivitySummary,
 } from './lib/stravaApi';
+import { buildDailyTrimps, projectFormSeries } from './lib/formMetrics';
+import { computeStreamStats } from './lib/streamStats';
+import { computeActivityTrimp } from './lib/trimp';
 
 const TOKEN_REFRESH_BUFFER_SEC = 300;
 const MAX_BACKFILL_PAGES = 5;
@@ -53,9 +57,34 @@ async function getValidAccessToken(ctx: ActionCtx, athleteId: Id<'athletes'>): P
 // Helper: build upsert args from a Strava activity summary
 // ---------------------------------------------------------------------------
 
+interface AthleteProfile {
+  sex?: 'M' | 'F';
+  restingHr?: number;
+  maxHr?: number;
+}
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function buildActivityArgs(athleteId: Id<'athletes'>, activity: StravaActivitySummary) {
+function buildActivityArgs(
+  athleteId: Id<'athletes'>,
+  activity: StravaActivitySummary,
+  athlete: AthleteProfile = {},
+) {
   const bucket = deriveActivityBucket(activity.sport_type);
+
+  const trimp = computeActivityTrimp(
+    {
+      movingTimeSec: activity.moving_time,
+      ...(activity.average_heartrate != null
+        ? { averageHeartrate: activity.average_heartrate }
+        : {}),
+      ...(activity.max_heartrate != null ? { maxHeartrate: activity.max_heartrate } : {}),
+      sportType: activity.sport_type,
+      distanceMeters: activity.distance,
+      totalElevationGainM: activity.total_elevation_gain,
+      ...(activity.suffer_score != null ? { sufferScore: activity.suffer_score } : {}),
+    },
+    athlete,
+  );
 
   return {
     athleteId,
@@ -85,6 +114,7 @@ function buildActivityArgs(athleteId: Id<'athletes'>, activity: StravaActivitySu
     ...(activity.gear_id ? { stravaGearId: activity.gear_id } : {}),
     ...(activity.splits_metric ? { splitsMetric: activity.splits_metric } : {}),
     ...(activity.laps ? { laps: activity.laps } : {}),
+    trimp,
     processingStatus: 'complete' as const,
   };
 }
@@ -112,6 +142,15 @@ export const backfillHistory = internalAction({
 
     try {
       const token = await getValidAccessToken(ctx, args.athleteId);
+
+      const athlete = await ctx.runQuery(internal.athletes.getById, {
+        athleteId: args.athleteId,
+      });
+      const athleteProfile: AthleteProfile = {
+        ...(athlete?.sex ? { sex: athlete.sex } : {}),
+        ...(athlete?.restingHr != null ? { restingHr: athlete.restingHr } : {}),
+        ...(athlete?.maxHr != null ? { maxHr: athlete.maxHr } : {}),
+      };
 
       const allActivities: StravaActivitySummary[] = [];
       for (let page = 1; page <= MAX_BACKFILL_PAGES; page++) {
@@ -146,7 +185,7 @@ export const backfillHistory = internalAction({
       for (const activity of newActivities) {
         await ctx.runMutation(
           internal.activities.upsertFromStrava,
-          buildActivityArgs(args.athleteId, activity),
+          buildActivityArgs(args.athleteId, activity, athleteProfile),
         );
       }
 
@@ -154,6 +193,31 @@ export const backfillHistory = internalAction({
         athleteId: args.athleteId,
         lastActivityStartTime: maxStartEpoch,
         lastPollAt: Math.floor(Date.now() / 1000),
+      });
+
+      // Fetch athlete HR zones (1 API call, cached 7 days)
+      try {
+        const existingZones = await ctx.runQuery(internal.athleteZones.getLatest, {
+          athleteId: args.athleteId,
+        });
+        if (!existingZones) {
+          const zonesData = await fetchAthleteZones(token);
+          await ctx.runMutation(internal.athleteZones.upsertForAthlete, {
+            athleteId: args.athleteId,
+            ...(zonesData.heart_rate?.zones ? { heartRateZones: zonesData.heart_rate.zones } : {}),
+          });
+          console.log(`Fetched HR zones for athlete ${args.athleteId}`);
+        }
+      } catch (zoneErr) {
+        console.warn(
+          'Failed to fetch athlete zones:',
+          zoneErr instanceof Error ? zoneErr.message : String(zoneErr),
+        );
+      }
+
+      // Schedule form snapshot computation after backfill
+      await ctx.scheduler.runAfter(0, internal.stravaSync.computeFormSnapshots, {
+        athleteId: args.athleteId,
       });
 
       await ctx.runMutation(internal.athletes.updateBackfillStatus, {
@@ -171,6 +235,51 @@ export const backfillHistory = internalAction({
       });
       throw err;
     }
+  },
+});
+
+// ---------------------------------------------------------------------------
+// computeFormSnapshots: Compute CTL/ATL/TSB series and persist to formSnapshots.
+// Scheduled after backfill completes or on demand.
+// ---------------------------------------------------------------------------
+
+export const computeFormSnapshots = internalAction({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    const activities = await ctx.runQuery(internal.activities.listAll, {
+      athleteId: args.athleteId,
+    });
+
+    if (activities.length === 0) {
+      console.log(`No activities for form computation: ${args.athleteId}`);
+      return;
+    }
+
+    const dailyTrimps = buildDailyTrimps(
+      activities.map((a) => ({
+        startDate: a.startDate,
+        ...(a.trimp != null ? { trimp: a.trimp } : {}),
+        movingTimeSec: a.movingTimeSec,
+      })),
+    );
+
+    if (dailyTrimps.length === 0) return;
+
+    const series = projectFormSeries(dailyTrimps);
+
+    for (const snap of series) {
+      await ctx.runMutation(internal.formSnapshots.upsertDay, {
+        athleteId: args.athleteId,
+        date: snap.date,
+        ctl: snap.ctl,
+        atl: snap.atl,
+        tsb: snap.tsb,
+        acwr: snap.acwr,
+        dailyTrimp: snap.dailyTrimp,
+      });
+    }
+
+    console.log(`Computed ${String(series.length)} form snapshots for athlete ${args.athleteId}`);
   },
 });
 
@@ -204,6 +313,7 @@ export const fetchStreamsOnDemand = action({
       const downsampled = downsampleStreams(streams);
 
       if (downsampled) {
+        const stats = computeStreamStats(downsampled);
         await ctx.runMutation(internal.activityStreams.upsertForActivity, {
           activityId: args.activityId,
           kind: 'downsampled',
@@ -218,6 +328,7 @@ export const fetchStreamsOnDemand = action({
           ...(downsampled.tempC ? { tempC: downsampled.tempC } : {}),
           ...(downsampled.gradeSmooth ? { gradeSmooth: downsampled.gradeSmooth } : {}),
           meta: downsampled.meta,
+          stats,
         });
         return { status: 'loaded' as const };
       }

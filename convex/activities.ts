@@ -90,6 +90,13 @@ export const getByStravaId = internalQuery({
   },
 });
 
+export const getByDocId = internalQuery({
+  args: { activityId: v.id('activities') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.activityId);
+  },
+});
+
 export const listForAthlete = query({
   args: {
     athleteId: v.id('athletes'),
@@ -145,5 +152,29 @@ export const listStravaIdsForAthlete = internalQuery({
       .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
       .take(2000);
     return activities.map((a) => a.stravaActivityId);
+  },
+});
+
+export const listWithoutTrimp = internalQuery({
+  args: { athleteId: v.id('athletes'), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query('activities')
+      .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
+      .take(args.limit ?? 500);
+    return all.filter((a) => a.trimp == null);
+  },
+});
+
+export const patchTrimp = internalMutation({
+  args: {
+    activityId: v.id('activities'),
+    trimp: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.activityId, {
+      trimp: args.trimp,
+      updatedAt: Date.now(),
+    });
   },
 });

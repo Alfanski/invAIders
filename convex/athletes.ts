@@ -59,6 +59,13 @@ export const getProfile = query({
   },
 });
 
+export const getById = internalQuery({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.athleteId);
+  },
+});
+
 export const listAllInternal = internalQuery({
   args: {},
   handler: async (ctx) => {

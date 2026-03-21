@@ -1,12 +1,16 @@
 'use client';
 
+import { useAction } from 'convex/react';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode, SyntheticEvent } from 'react';
 
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { getSuggestionsForRoute, getRouteContext } from '@/lib/coach/context-suggestions';
 import { generateCoachResponse } from '@/lib/coach/mock-responses';
 import { useVoiceInput } from '@/lib/coach/use-voice-input';
+import { useSession } from '@/components/providers/session-provider';
 
 import { useCoach } from './coach-provider';
 import type { CoachMessage } from './coach-provider';
@@ -17,6 +21,8 @@ export function CoachPanel(): ReactNode {
   const pathname = usePathname();
   const suggestions = getSuggestionsForRoute(pathname);
   const routeContext = getRouteContext(pathname);
+  const session = useSession();
+  const coachChat = useAction(api.aiAnalysis.coachChat);
   const {
     isSupported,
     isListening,
@@ -36,13 +42,21 @@ export function CoachPanel(): ReactNode {
       addUserMessage(text.trim());
       setProcessing(true);
       try {
-        const response = await generateCoachResponse(text);
-        addCoachMessage(response);
+        if (session?.athleteId) {
+          const result = await coachChat({
+            athleteId: session.athleteId as Id<'athletes'>,
+            message: text.trim(),
+          });
+          addCoachMessage(result.response);
+        } else {
+          const response = await generateCoachResponse(text);
+          addCoachMessage(response);
+        }
       } finally {
         setProcessing(false);
       }
     },
-    [addUserMessage, addCoachMessage, isProcessing, setProcessing],
+    [addUserMessage, addCoachMessage, isProcessing, setProcessing, session, coachChat],
   );
 
   useEffect(() => {

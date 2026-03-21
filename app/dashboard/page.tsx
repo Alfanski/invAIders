@@ -73,6 +73,11 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
     activity ? { activityId: activity._id } : 'skip',
   );
 
+  const analysis = useQuery(
+    api.analyses.getForActivity,
+    activity ? { activityId: activity._id } : 'skip',
+  );
+
   const fetchStreams = useAction(api.stravaSync.fetchStreamsOnDemand);
   const fetchedRef = useRef<string | null>(null);
 
@@ -116,8 +121,9 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
 
   const streams = buildStreams(streamResult ?? null);
 
-  const coachingInsight =
-    'AI analysis will appear here once the coaching pipeline processes this activity.';
+  const coachingInsight = analysis
+    ? analysis.executiveSummary
+    : 'AI analysis will appear here once the coaching pipeline processes this activity.';
 
   return (
     <WorkoutView

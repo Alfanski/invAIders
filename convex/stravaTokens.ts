@@ -42,6 +42,13 @@ export const upsertConnection = internalMutation({
   },
 });
 
+export const listAll = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query('stravaTokens').take(100);
+  },
+});
+
 export const getForAthlete = internalQuery({
   args: { athleteId: v.id('athletes') },
   handler: async (ctx, args) => {
