@@ -1,9 +1,5 @@
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
-  experimental: {
-    optimizePackageImports: ['recharts', 'date-fns'],
-  },
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
