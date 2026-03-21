@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Workout' },
   { href: '/dashboard/week', label: 'Week' },
-  { href: '/dashboard/form', label: 'Coach Status' },
+  { href: '/dashboard/form', label: 'Training Pulse' },
 ] as const;
 
 export function DashboardTabBar(): ReactNode {

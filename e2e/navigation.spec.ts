@@ -19,8 +19,8 @@ test.describe('Dashboard navigation', () => {
     await page.getByRole('link', { name: 'Week' }).click();
     await expect(page.getByText('Week of Mar 15')).toBeVisible();
 
-    await page.getByRole('link', { name: 'Coach Status' }).click();
-    await expect(page.getByText('Coach Status')).toBeVisible();
+    await page.getByRole('link', { name: 'Training Pulse' }).click();
+    await expect(page.getByText('Balanced')).toBeVisible();
 
     await page.getByRole('link', { name: 'Workout' }).click();
     await expect(page.getByText('Morning Run')).toBeVisible();
