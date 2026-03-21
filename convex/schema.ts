@@ -21,6 +21,7 @@ export default defineSchema({
     measurementPreference: v.optional(v.union(v.literal('feet'), v.literal('meters'))),
     sex: v.optional(v.union(v.literal('M'), v.literal('F'))),
     weightKg: v.optional(v.number()),
+    heightCm: v.optional(v.number()),
     goalText: v.optional(v.string()),
     restingHr: v.optional(v.number()),
     maxHr: v.optional(v.number()),

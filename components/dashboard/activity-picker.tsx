@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import type { Id } from '@/convex/_generated/dataModel';
@@ -42,73 +42,98 @@ function formatShortDate(startDate: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen) return str;
-  return str.slice(0, maxLen - 1) + '\u2026';
-}
-
 export function ActivityPicker({
   activities,
   selectedId,
   onSelect,
 }: Readonly<ActivityPickerProps>): ReactNode {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const selectedRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (selectedRef.current && scrollRef.current) {
-      const container = scrollRef.current;
-      const el = selectedRef.current;
-      const left = el.offsetLeft - container.offsetLeft - 8;
-      container.scrollTo({ left, behavior: 'smooth' });
+    if (!open) return;
+    function handleClick(e: MouseEvent): void {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     }
-  }, [selectedId]);
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [open]);
 
   if (activities.length < 2) return null;
 
-  return (
-    <section>
-      <h3 className="mb-2 text-[11px] font-medium uppercase tracking-widest text-glass-text-dim">
-        Workouts
-      </h3>
-      <div ref={scrollRef} className="scrollbar-hide -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {activities.map((a) => {
-          const isSelected = a._id === selectedId;
-          const color = sportColor(a.sportType);
-          const distKm = a.distanceMeters / 1000;
+  const selected = activities.find((a) => a._id === selectedId) ?? activities[0];
+  if (!selected) return null;
 
-          return (
-            <button
-              key={a._id}
-              ref={isSelected ? selectedRef : undefined}
-              type="button"
-              onClick={() => {
-                onSelect(a._id);
-              }}
-              className={`flex shrink-0 flex-col gap-0.5 rounded-xl px-3 py-2 text-left transition-all ${
-                isSelected
-                  ? 'bg-accent/20 ring-1 ring-accent/40 shadow-sm'
-                  : 'bg-glass hover:bg-glass-hover'
-              }`}
-              style={{ minWidth: '7.5rem' }}
-            >
-              <div className="flex items-center gap-1.5">
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((p) => !p);
+        }}
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-glass-text-muted transition-colors hover:bg-glass-hover hover:text-glass-text"
+      >
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ backgroundColor: sportColor(selected.sportType) }}
+        />
+        <span className="font-medium">{selected.name}</span>
+        <span className="text-glass-text-dim">{formatShortDate(selected.startDate)}</span>
+        <svg
+          className={`h-3 w-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 top-full z-50 mt-1 max-h-64 w-72 overflow-y-auto rounded-xl border border-glass-border shadow-xl backdrop-blur-xl scrollbar-hide"
+          style={{ backgroundColor: 'var(--surface-tooltip)' }}
+        >
+          {activities.map((a) => {
+            const isSelected = a._id === selectedId;
+            const color = sportColor(a.sportType);
+            const distKm = a.distanceMeters / 1000;
+
+            return (
+              <button
+                key={a._id}
+                type="button"
+                onClick={() => {
+                  onSelect(a._id);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors ${
+                  isSelected
+                    ? 'bg-accent/15 text-glass-text'
+                    : 'text-glass-text-muted hover:bg-glass-hover hover:text-glass-text'
+                }`}
+              >
                 <span
                   className="h-1.5 w-1.5 shrink-0 rounded-full"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-[10px] font-medium uppercase tracking-wider text-glass-text-dim">
+                <span className="min-w-0 flex-1 truncate text-xs font-medium">{a.name}</span>
+                <span className="shrink-0 text-[10px] tabular-nums text-glass-text-dim">
+                  {distKm.toFixed(1)} km
+                </span>
+                <span className="shrink-0 text-[10px] text-glass-text-dim">
                   {formatShortDate(a.startDate)}
                 </span>
-              </div>
-              <span className="text-xs font-semibold text-glass-text">{truncate(a.name, 18)}</span>
-              <span className="tabular-nums text-[10px] text-glass-text-muted">
-                {distKm.toFixed(1)} km
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </section>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

@@ -136,6 +136,11 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
 
   return (
     <div className="space-y-5">
+      <ActivityPicker
+        activities={recentActivities}
+        selectedId={activeId}
+        onSelect={setSelectedId}
+      />
       <WorkoutView
         title={activity.name}
         dateLabel={formatDateLabel(activity.startDate)}
@@ -151,11 +156,6 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
         heartRateStream={heartRateStream}
         streamsLoading={streamsFetching}
         gear={gear}
-      />
-      <ActivityPicker
-        activities={recentActivities}
-        selectedId={activeId}
-        onSelect={setSelectedId}
       />
     </div>
   );
