@@ -1,0 +1,9 @@
+# Ensure shell scripts use Unix line endings (LF) on all platforms
+*.sh text eol=lf
+
+# Ensure JSON configs use Unix line endings
+*.json text eol=lf
+
+# Ensure markdown files use Unix line endings
+*.md text eol=lf
+*.mdc text eol=lf

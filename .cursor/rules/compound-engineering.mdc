@@ -1,0 +1,10 @@
+---
+description: "Compound engineering: documentation stays current with code"
+alwaysApply: true
+---
+
+When completing tasks that change architecture, commands, or patterns:
+
+1. Update relevant agent doc (CLAUDE.md, AGENTS.md, or .cursor/rules/)
+2. If corrected by the user, add to tasks/lessons.md
+3. Include a "Documentation Updates" section in every PR description
