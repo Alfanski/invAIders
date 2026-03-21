@@ -1,0 +1,328 @@
+---
+description: "CoachAgent UI/UX design system -- dark glassmorphism, token palette, component patterns"
+globs: app/**/*.tsx,components/**/*.tsx,app/globals.css
+---
+
+# UI/UX Design System
+
+All UI work MUST follow these patterns. Read this before creating or modifying
+any component, page, or style.
+
+## Visual Identity
+
+Dark-only glassmorphism aesthetic. No light mode, no theme toggle.
+Root HTML element has `className="dark"`, body uses `color-scheme: dark`.
+
+### Background
+
+Full-viewport gradient on `body`:
+
+```
+linear-gradient(145deg, #0c0a1a 0%, #12102b 30%, #0e1628 60%, #0a0e1a 100%)
+```
+
+Atmospheric mesh layer (`bg-mesh` div in root layout) adds two blurred radial
+gradient orbs: indigo (`#6366f1`) top-right, green (`#22c55e`) bottom-left, both
+at 25% opacity with 120px blur.
+
+## Color Tokens
+
+All custom colors live in `app/globals.css` inside `@theme { }` (Tailwind v4).
+Use these tokens via Tailwind utilities (e.g. `bg-glass`, `text-accent`).
+Never introduce new hard-coded colors without adding them to `@theme` first.
+
+### Glass surface palette
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `glass` | `rgba(255,255,255, 0.06)` | Default panel/card bg |
+| `glass-border` | `rgba(255,255,255, 0.1)` | Panel/card border |
+| `glass-hover` | `rgba(255,255,255, 0.1)` | Hover state bg |
+| `glass-active` | `rgba(255,255,255, 0.14)` | Active/pressed state bg |
+| `glass-text` | `rgba(255,255,255, 0.9)` | Primary text |
+| `glass-text-muted` | `rgba(255,255,255, 0.5)` | Secondary text, inactive tabs |
+| `glass-text-dim` | `rgba(255,255,255, 0.35)` | Tertiary text, micro labels |
+
+### Accent
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `accent` | `#6366f1` (indigo) | Primary action, brand, active states |
+| `accent-glow` | `rgba(99,102,241, 0.35)` | Glow shadows |
+| `accent-surface` | `rgba(99,102,241, 0.12)` | Subtle accent bg |
+
+### Training zones (HR / intensity)
+
+| Token | Value | Zone |
+|-------|-------|------|
+| `zone-z1` | `#94a3b8` | Recovery |
+| `zone-z2` | `#60a5fa` | Easy / Endurance |
+| `zone-z3` | `#34d399` | Tempo |
+| `zone-z4` | `#fbbf24` | Threshold |
+| `zone-z5` | `#f87171` | VO2max / Anaerobic |
+
+### Coach / fitness metrics
+
+| Token | Value | Metric |
+|-------|-------|--------|
+| `coach-ctl` | `#6366f1` | Chronic Training Load |
+| `coach-atl` | `#f43f5e` | Acute Training Load |
+| `coach-tsb` | `#22c55e` | Training Stress Balance |
+
+### Workout stream colors (inline, not `@theme`)
+
+Use consistently across charts and metric cards:
+
+| Stream | Color |
+|--------|-------|
+| Heart rate | `#f87171` |
+| Pace | `#34d399` |
+| Elevation | `#60a5fa` |
+| Cadence | `#fbbf24` |
+| Calories | `#94a3b8` |
+| Effort | `#c084fc` |
+
+### Form gauge zones (inline)
+
+Red-to-blue progression: `#ef4444`, `#f97316`, `#eab308`, `#22c55e`, `#3b82f6`.
+
+## Glass Panel Classes
+
+Three tiers defined in `globals.css`. Never invent new panel styles.
+
+| Class | Radius | Blur | Use for |
+|-------|--------|------|---------|
+| `glass-panel` | 1rem | 20px, saturate 1.4 | Sections, containers, nav bar |
+| `glass-panel-elevated` | 1rem | 24px, saturate 1.5, deep shadow + inset highlight | Hero blocks, modals, overlays |
+| `glass-card` | 0.75rem | 16px, saturate 1.3, hover transition | Metric tiles, small interactive items |
+
+### Panel composition rules
+
+- Sections: `glass-panel p-4` or `glass-panel p-5`
+- Stat cards: `glass-card p-3`
+- Interactive cards: add `cursor-pointer hover:bg-glass-hover active:bg-glass-active`
+- Selected card: add `ring-1 ring-accent/40 bg-glass-active`
+- AI insight blocks: `glass-panel` + `border border-accent/20`, icon inside `rounded-lg bg-accent/20`
+
+## Typography
+
+System font stack (Tailwind default) with `antialiased` on `body`.
+OpenType features: `'cv02', 'cv03', 'cv04', 'cv11'` on body.
+
+### Scale
+
+| Context | Classes |
+|---------|---------|
+| Page title / hero | `text-4xl font-bold tracking-tight` |
+| Section title | `text-2xl font-bold tracking-tight` or `text-xl font-semibold` |
+| Section label | `text-[11px] font-medium uppercase tracking-widest text-glass-text-dim` |
+| Body text | `text-sm text-glass-text` or `text-glass-text-muted` |
+| Stat value | `text-lg font-semibold tracking-tight text-white` |
+| Micro label | `text-[10px]` or `text-[9px]` |
+| Chat bubble | `text-[13px] leading-relaxed` |
+
+### Rules
+
+- Use `uppercase tracking-widest` for category/section labels
+- Use `tabular-nums` on numeric displays
+- Headings use `tracking-tight`; labels use `tracking-wider` or `tracking-widest`
+- Brand name: `mAIcoach` with `<span className="text-accent">AI</span>`
+
+## Layout
+
+### Page structure
+
+- Root layout: full viewport, `bg-mesh` decorative div, `Providers` wrapper
+- Dashboard: single column, `max-w-6xl mx-auto`, `px-4 sm:px-6 py-6`, `gap-6`
+- Home / landing: centered column, `max-w-3xl mx-auto`, full-height centering
+
+### Responsive approach
+
+Mobile-first. Only `sm:` and `lg:` breakpoints are used (no `md:` / `xl:`).
+
+Common patterns:
+- `flex-col` then `sm:flex-row`
+- `px-4 sm:px-6`
+- `gap-2 sm:gap-3 lg:gap-4`
+- Coach panel: full-width `left-4 right-4` on mobile, `sm:w-[380px]` anchored bottom-right on desktop
+
+### Grids
+
+| Context | Classes |
+|---------|---------|
+| Metric cards | `grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4` |
+| Tab bar | `grid grid-cols-3 gap-1 p-1` |
+| Day selector | `grid grid-cols-7` |
+| Stat pairs | `grid grid-cols-2 gap-3` |
+
+## Navigation
+
+No sidebar. Top header with brand, then a segmented tab bar.
+
+Tab bar: `glass-panel grid grid-cols-3 gap-1 p-1` containing `Link` elements.
+- Active: `bg-accent/20 text-white shadow-sm rounded-xl`
+- Inactive: `text-glass-text-muted hover:text-white hover:bg-glass-hover rounded-xl`
+
+## Buttons
+
+| Variant | Classes |
+|---------|---------|
+| Primary CTA | `rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg transition hover:brightness-110 glow-accent` |
+| FAB / orb | `rounded-full bg-accent shadow-lg transition-transform hover:scale-110 active:scale-95` |
+| Ghost / close | `rounded-lg p-1 text-glass-text-muted transition-colors hover:bg-glass-hover hover:text-white` |
+| Icon button | `h-9 w-9 rounded-xl` + bg/text per variant |
+| Disabled | `disabled:opacity-20` |
+
+## Badges / Tags
+
+- Activity type: `rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent`
+- Suggestion chip: `rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/20`
+- Zone/metric colors: use inline `style={{ color }}` for dynamic values
+
+## Charts (Recharts)
+
+### General rules
+
+- Wrap in `glass-panel p-4` with `ResponsiveContainer` inside
+- Axes: `stroke="rgba(255,255,255,0.15)"`, tick fill `rgba(255,255,255,0.35)`, `fontSize: 11`
+- No tick lines, no axis lines
+- Tooltips: `rounded-lg border border-glass-border bg-[#1a1830] px-3 py-2 text-xs shadow-xl`
+- Dot: `dot={false}` on lines/areas; use `activeDot` with `stroke="#1a1830"`
+
+### Area charts (streams)
+
+- Linear gradient fill: top `stopOpacity={0.3}`, bottom `stopOpacity={0.02}`
+- `strokeWidth={2}`
+- Chart height: `h-48`
+
+### Bar charts (weekly)
+
+- `radius={[4, 4, 0, 0]}`, `maxBarSize={36}`
+- Height: `h-32`
+- Per-bar fill via data property
+
+### Composed charts (fitness/form)
+
+- Height: 240px
+- Reference line at y=0 dashed
+- Area fill for TSB (green), solid Line for CTL, dashed Line for ATL (`strokeDasharray="6 4"`)
+
+## Icons
+
+Inline SVG (Heroicons-style paths). No icon library import.
+- `stroke="currentColor"`, `fill="none"`, `viewBox="0 0 24 24"`
+- `strokeWidth={2}` (occasionally 1.8 or 2.5)
+- Sizes: `h-3 w-3` (chevrons) up to `h-6 w-6` (orb)
+- Color via text utilities: `text-accent`, `text-glass-text-dim`, `text-white`
+
+## Animations
+
+### CSS (defined in globals.css)
+
+| Class | Keyframes | Duration | Use |
+|-------|-----------|----------|-----|
+| `coach-orb` | `coach-breathe` | 3s infinite | Orb shadow pulse |
+| `coach-orb-ring` | `coach-ring-pulse` | 3s infinite | Ring scale/fade |
+| `coach-panel-enter` | `coach-panel-appear` | 0.25s ease-out | Panel slide-up + scale |
+| `coach-thinking span` | `coach-dot-bounce` | 1.4s staggered | Thinking dots |
+
+### Tailwind transitions
+
+- Default: `transition` or `transition-colors`, `transition-all`
+- Duration: `duration-200` (most), `duration-300`, `duration-700 ease-out` (progress bars)
+- Hover transforms: `hover:scale-110`, `active:scale-95`
+- Rotate: `transition-transform duration-200` + conditional `rotate-180` (chevrons)
+- Ping: `animate-ping` on active voice button
+
+## Shadows
+
+| Context | Pattern |
+|---------|---------|
+| Basic card | `shadow-sm` |
+| Panel / modal | `shadow-2xl` |
+| Tooltip | `shadow-xl` |
+| Accent glow | `.glow-accent` class (defined in CSS) |
+| Inline glow | `shadow-[0_0_15px_rgba(99,102,241,0.4)]` for accent highlights |
+
+## Coach Panel Pattern
+
+Floating panel, fixed positioned:
+- Mobile: `bottom-4 left-4 right-4`
+- Desktop: `sm:left-auto sm:bottom-6 sm:right-6 sm:w-[380px]`
+- Shell: `rounded-2xl border border-glass-border bg-[#0c0a1a]/95 shadow-2xl backdrop-blur-xl`
+- Max height: `min(60vh, 520px)`
+- Sections divided by `border-t border-glass-border/50`
+
+### Chat bubbles
+
+- Coach: `border-l-2 border-accent/40 bg-glass text-glass-text`, with "Coach" label in `text-[8px] uppercase tracking-widest text-accent`
+- User: `bg-accent/20 text-white`
+- Both: `rounded-2xl px-3 py-2 max-w-[85%]`
+
+## Spacing Conventions
+
+| Context | Value |
+|---------|-------|
+| Page-level vertical | `gap-6` or `space-y-5` |
+| Section internal | `p-4` or `p-5` |
+| Between cards | `gap-2 sm:gap-3 lg:gap-4` |
+| Tight groups (chips, inputs) | `gap-1.5` or `gap-2` |
+| Micro adjustments | `mt-0.5`, `mt-1`, `mb-3` |
+
+## Border Radius Conventions
+
+| Context | Class |
+|---------|-------|
+| Orb, dots, progress bars | `rounded-full` |
+| Coach panel, chat bubbles | `rounded-2xl` |
+| Tab links, inputs, icon buttons | `rounded-xl` |
+| CTA buttons, icon containers | `rounded-lg` |
+| Activity badge | `rounded-md` |
+| Glass panel / elevated (CSS) | `1rem` |
+| Glass card (CSS) | `0.75rem` |
+
+## Anti-Patterns (DO NOT)
+
+- Do NOT add a light mode or theme toggle
+- Do NOT use `bg-white`, `text-slate-*`, `border-slate-*` or any light-theme classes
+- Do NOT import an icon library (lucide, heroicons package) -- use inline SVG
+- Do NOT install shadcn/ui -- use the glass panel system
+- Do NOT create new panel/card CSS classes -- use the three existing tiers
+- Do NOT hard-code colors in TSX without first checking if a `@theme` token exists
+- Do NOT use `md:` or `xl:` breakpoints -- stick to `sm:` and `lg:`
+- Do NOT add scrollbars -- use `scrollbar-hide` class where overflow is needed
+- Do NOT use emojis in the UI (except the rest-day face icon)
+
+## Component Structure
+
+Components live in `components/` (not `src/components/`). Pages in `app/`.
+
+| Folder | Purpose |
+|--------|---------|
+| `components/dashboard/` | Workout, week, chart, metric components |
+| `components/form/` | Training pulse (gauge, recovery, fitness chart) |
+| `components/coach/` | AI coach orb, panel, provider |
+| `components/layout/` | Navigation (tab bar) |
+| `components/providers/` | Context providers (Convex) |
+
+### Component conventions
+
+- Export named functions (not default exports) for components
+- Pages use `export default function PageName()` (Next.js convention)
+- Props interfaces defined above the component, suffix `Props`
+- All props use `Readonly<Props>` wrapper
+- Return type annotated as `ReactNode`
+- `'use client'` directive only when needed (state, effects, event handlers)
+- Internal sub-components (like `CardContent`, `MessageBubble`) stay in the same file, not exported
+
+## Input Styling
+
+Text inputs: `rounded-xl bg-glass px-3 py-2 text-sm text-white placeholder-glass-text-dim outline-none ring-1 ring-glass-border transition-shadow focus:ring-accent/40`
+
+## Status / Loading States
+
+- Thinking: three dots (`h-1.5 w-1.5 rounded-full bg-accent`) with `coach-thinking` animation + "Thinking..." text
+- Listening: `ring-1 ring-accent/60` on input, `animate-ping` on mic button, "Listening..." placeholder
+- Disabled: `disabled:opacity-20`
+- Empty state: centered muted text `text-xs text-glass-text-dim`
+- Rest day: circular icon + muted copy (no skeleton/spinner patterns yet)

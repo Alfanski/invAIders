@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { CoachOrb } from '@/components/coach/coach-orb';
@@ -15,6 +16,12 @@ export default function DashboardLayout({
           <h1 className="text-2xl font-bold tracking-tight">
             m<span className="text-accent">AI</span>coach
           </h1>
+          <Link
+            href="/api/auth/logout"
+            className="rounded-lg border border-glass-border px-3 py-1.5 text-xs font-medium text-glass-text-muted transition hover:bg-glass-hover hover:text-glass-text"
+          >
+            Sign out
+          </Link>
         </header>
         <DashboardTabBar />
         {children}

@@ -13,7 +13,7 @@ generates visual dashboards, and delivers voice debriefs via ElevenLabs.
 - **AI:** Gemini API (coaching analysis, structured JSON output)
 - **Voice:** ElevenLabs TTS
 - **Data source:** Strava API v3 (OAuth 2.0)
-- **UI:** shadcn/ui + Tailwind CSS + Recharts + Leaflet
+- **UI:** Custom glassmorphism design system + Tailwind CSS v4 + Recharts + Leaflet
 - **Language:** TypeScript throughout
 
 ## Commands
@@ -136,6 +136,11 @@ npm run test:coverage # with 80% threshold enforcement
 
 ## Key Patterns
 
+- UI follows dark glassmorphism design system (`.cursor/rules/ui-design-system.mdc`)
+- Three glass surface tiers: `glass-panel`, `glass-panel-elevated`, `glass-card`
+- All custom colors defined as `@theme` tokens in `app/globals.css` (Tailwind v4)
+- No icon library -- inline SVG only (Heroicons-style paths)
+- No shadcn/ui -- custom components using glass panel system
 - Strava tokens stored server-side only (Convex restricted table)
 - Streams always downsampled before AI -- never send raw 10K-point arrays
 - TRIMP computed per activity for training load tracking
@@ -149,6 +154,8 @@ npm run test:coverage # with 80% threshold enforcement
 - Never send raw streams to Gemini (token waste, no quality improvement)
 - Don't call it "Body Battery" (Garmin trademark) -- use "Coach Status"
 - Don't rely on `suffer_score` alone (premium-only) -- compute TRIMP as fallback
+- Don't use light-theme classes (`bg-white`, `text-slate-*`) -- always dark
+- Don't install shadcn/ui or icon packages -- use existing glass + inline SVG patterns
 
 ## Strava API Limits
 
