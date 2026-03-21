@@ -97,6 +97,7 @@ Every activity record tracks its pipeline state:
 | Path                  | Purpose                               |
 | --------------------- | ------------------------------------- |
 | `docs/index.md`       | Central documentation hub             |
+| `docs/design/DD-*.md` | Architecture & technical design docs  |
 | `docs/prd/PRD-*.md`   | Product requirements documents        |
 | `AGENTS.md`           | This file -- cross-tool agent context |
 | `tasks/lessons.md`    | Corrections and patterns learned      |

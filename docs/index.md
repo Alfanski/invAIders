@@ -25,7 +25,11 @@ AI fitness coach powered by Strava. Analyzes workouts, generates dashboards, del
 
 ## Design Docs
 
-_None yet. Add as `docs/design/DD-NNN-title.md` when technical decisions need recording._
+| ID                                                       | Title                                    | Status |
+| -------------------------------------------------------- | ---------------------------------------- | ------ |
+| [DD-001](design/DD-001-application-architecture-plan.md) | Application architecture & contract prep | Draft  |
+
+_Add further design docs as `docs/design/DD-NNN-title.md`._
 
 ## Quick Links
 
