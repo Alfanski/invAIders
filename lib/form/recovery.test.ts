@@ -64,6 +64,21 @@ describe('computeRecovery', () => {
     expect(fatigued.recoveryPct).toBeLessThan(base.recoveryPct);
   });
 
+  it('deeply negative TSB (overreaching) reduces recovery more than moderate fatigue', () => {
+    const fatigued = computeRecovery(38, 0, { tsb: -25 });
+    const overreaching = computeRecovery(38, 0, { tsb: -77.5 });
+    expect(overreaching.recoveryPct).toBeLessThan(fatigued.recoveryPct);
+    expect(overreaching.recoveryPct).toBeLessThanOrEqual(45);
+  });
+
+  it('overreaching TSB prevents readiness for moderate and harder activities', () => {
+    const result = computeRecovery(38, 0, { tsb: -77.5 });
+    expect(result.readyFor).not.toContain('Moderate run');
+    expect(result.readyFor).not.toContain('Tempo run');
+    expect(result.readyFor).not.toContain('Intervals');
+    expect(result.readyFor).not.toContain('Race effort');
+  });
+
   it('positive TSB boosts recovery percentage', () => {
     const base = computeRecovery(20, 100);
     const fresh = computeRecovery(20, 100, { tsb: 15 });

@@ -38,11 +38,29 @@ export interface RecoveryInput {
 }
 
 /**
+ * Piecewise TSB modifier aligned with classifyForm zones:
+ *   positive TSB  → small boost (max +0.10)
+ *   0 to -30      → linear penalty up to -0.20 (fatigued zone)
+ *   below -30     → steep penalty up to -0.60 (overreaching zone)
+ */
+function computeTsbModifier(tsb: number): number {
+  if (tsb >= 0) {
+    return Math.min(0.1, tsb / 150);
+  }
+  if (tsb > -30) {
+    return (tsb / 30) * 0.2;
+  }
+  return Math.max(-0.6, -0.2 + ((tsb + 30) / 50) * 0.4);
+}
+
+/**
  * Enhanced recovery model that factors in training form signals when available.
  *
  * Base: time-since-last-activity / TRIMP-band target (original model).
- * Modifier 1 (TSB): negative TSB slows recovery (fatigued athletes recover slower),
- *   positive TSB boosts it (well-rested athletes recover faster).
+ * Modifier 1 (TSB): piecewise penalty/boost aligned with form zones.
+ *   - Overreaching (TSB < -30): steep penalty up to -60pp, dominates base.
+ *   - Fatigued (-30 to 0): moderate linear penalty up to -20pp.
+ *   - Positive TSB: small boost up to +10pp.
  * Modifier 2 (ACWR): ratio > 1.5 ("danger zone") penalizes recovery;
  *   ratio in 0.8-1.3 ("sweet spot") gives a small bonus.
  */
@@ -59,14 +77,12 @@ export function computeRecovery(
     const { tsb, acwr } = formSignals;
 
     if (tsb !== undefined) {
-      // TSB modifier: ranges roughly from -0.15 (very fatigued) to +0.10 (fresh)
-      const tsbModifier = Math.max(-0.15, Math.min(0.1, tsb / 200));
+      const tsbModifier = computeTsbModifier(tsb);
       rawPct = Math.min(1, Math.max(0, rawPct + tsbModifier));
     }
 
     if (acwr !== undefined) {
       if (acwr > 1.5) {
-        // High ACWR = acute spike well above chronic baseline, penalize
         const penalty = Math.min(0.15, (acwr - 1.5) * 0.3);
         rawPct = Math.max(0, rawPct - penalty);
       } else if (acwr >= 0.8 && acwr <= 1.3) {
