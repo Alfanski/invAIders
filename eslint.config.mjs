@@ -43,6 +43,14 @@ export default defineConfig(
     },
   },
   {
-    ignores: ['node_modules/', '.next/', 'dist/', 'build/', 'coverage/', 'convex/_generated/', 'scripts/'],
+    ignores: [
+      'node_modules/',
+      '.next/',
+      'dist/',
+      'build/',
+      'coverage/',
+      'convex/_generated/',
+      'scripts/',
+    ],
   },
 );
