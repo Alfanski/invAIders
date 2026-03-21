@@ -1,12 +1,15 @@
 'use client';
 
+import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 
-import { formatPace } from '@/lib/units';
+import type { ActivityBucket } from '@/lib/sport-config';
+import { getSportConfig } from '@/lib/sport-config';
 import type { StravaSplit } from '@/types/dashboard';
 
 interface SplitTableProps {
   splits: readonly StravaSplit[];
+  activityBucket?: ActivityBucket | undefined;
 }
 
 const ZONE_COLORS: Record<number, string> = {
@@ -22,7 +25,12 @@ function speedToPaceSecPerKm(speed: number): number {
   return 1000 / speed;
 }
 
-export function SplitTable({ splits }: Readonly<SplitTableProps>): ReactNode {
+export function SplitTable({
+  splits,
+  activityBucket = 'run',
+}: Readonly<SplitTableProps>): ReactNode {
+  const sportCfg = useMemo(() => getSportConfig(activityBucket), [activityBucket]);
+
   if (splits.length === 0) return null;
 
   const paces = splits.map((s) => speedToPaceSecPerKm(s.average_speed));
@@ -30,8 +38,13 @@ export function SplitTable({ splits }: Readonly<SplitTableProps>): ReactNode {
 
   function paceColor(pace: number): string {
     const diff = (pace - avgPace) / avgPace;
-    if (diff < -0.02) return '#34d399';
-    if (diff > 0.02) return '#f87171';
+    if (sportCfg.invertSpeedAxis) {
+      if (diff < -0.02) return '#34d399';
+      if (diff > 0.02) return '#f87171';
+    } else {
+      if (diff > 0.02) return '#34d399';
+      if (diff < -0.02) return '#f87171';
+    }
     return 'rgba(255,255,255,0.9)';
   }
 
@@ -45,10 +58,12 @@ export function SplitTable({ splits }: Readonly<SplitTableProps>): ReactNode {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-glass-border text-[10px] font-medium uppercase tracking-wider text-glass-text-dim">
-              <th className="py-2 pr-3 text-left">KM</th>
-              <th className="py-2 pr-3 text-right">Pace</th>
+              <th className="py-2 pr-3 text-left">{sportCfg.splitLabel}</th>
+              <th className="py-2 pr-3 text-right">
+                {activityBucket === 'ride' ? 'Speed' : 'Pace'}
+              </th>
               <th className="py-2 pr-3 text-right">HR</th>
-              <th className="py-2 pr-3 text-right">Elev</th>
+              {sportCfg.showElevation && <th className="py-2 pr-3 text-right">Elev</th>}
               <th className="py-2 text-center">Zone</th>
             </tr>
           </thead>
@@ -64,17 +79,19 @@ export function SplitTable({ splits }: Readonly<SplitTableProps>): ReactNode {
                     className="py-2 pr-3 text-right tabular-nums font-medium"
                     style={{ color: paceColor(pace) }}
                   >
-                    {formatPace(pace)}
+                    {sportCfg.formatSpeed(pace)}
                   </td>
                   <td className="py-2 pr-3 text-right tabular-nums text-glass-text-muted">
                     {split.average_heartrate
                       ? String(Math.round(split.average_heartrate))
                       : '\u2014'}
                   </td>
-                  <td className="py-2 pr-3 text-right tabular-nums text-glass-text-muted">
-                    {split.elevation_difference > 0 ? '+' : ''}
-                    {Math.round(split.elevation_difference)} m
-                  </td>
+                  {sportCfg.showElevation && (
+                    <td className="py-2 pr-3 text-right tabular-nums text-glass-text-muted">
+                      {split.elevation_difference > 0 ? '+' : ''}
+                      {Math.round(split.elevation_difference)} m
+                    </td>
+                  )}
                   <td className="py-2 text-center">
                     {split.pace_zone ? (
                       <span

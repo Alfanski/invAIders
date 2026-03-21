@@ -1,10 +1,14 @@
+export type ActivityBucket = 'run' | 'ride' | 'swim' | 'other';
+
 export interface WorkoutStats {
+  activityBucket: ActivityBucket;
   distanceKm: number;
   durationSec: number;
   paceSecPerKm: number;
   averageHeartRate: number;
   elevationGainM: number;
   cadenceRpm: number;
+  averageWatts: number;
   calories: number;
   effort: number;
   temperatureC: number;
@@ -94,6 +98,7 @@ export interface DaySummary {
   hasActivity: boolean;
   activityId?: string | undefined;
   activityType?: string | undefined;
+  activityBucket?: ActivityBucket | undefined;
   activityName?: string | undefined;
   distanceKm?: number | undefined;
   durationSec?: number | undefined;

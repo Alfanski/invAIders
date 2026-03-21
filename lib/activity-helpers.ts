@@ -1,3 +1,4 @@
+import type { ActivityBucket } from '@/lib/sport-config';
 import type { AnalysisData, WorkoutStreams } from '@/types/dashboard';
 
 export function buildStreams(
@@ -8,6 +9,7 @@ export function buildStreams(
     altitudeM?: number[];
     cadenceRpm?: number[];
   } | null,
+  bucket: ActivityBucket = 'run',
 ): WorkoutStreams | null {
   if (!stream) return null;
 
@@ -18,8 +20,14 @@ export function buildStreams(
     return data.map((v, i) => ({ timeSec: time[i] ?? 0, value: v }));
   }
 
-  function velocityToPace(data: number[] | undefined): { timeSec: number; value: number }[] {
+  function velocityToSpeedValue(data: number[] | undefined): { timeSec: number; value: number }[] {
     if (!data) return [];
+    if (bucket === 'ride') {
+      return data.map((v, i) => ({
+        timeSec: time[i] ?? 0,
+        value: v * 3.6,
+      }));
+    }
     return data.map((v, i) => ({
       timeSec: time[i] ?? 0,
       value: v > 0 ? 1000 / v : 0,
@@ -28,7 +36,7 @@ export function buildStreams(
 
   return {
     heartRate: toPoints(stream.heartrateBpm),
-    pace: velocityToPace(stream.velocitySmooth),
+    pace: velocityToSpeedValue(stream.velocitySmooth),
     elevation: toPoints(stream.altitudeM),
     cadence: toPoints(stream.cadenceRpm),
   };

@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/dashboard/empty-state';
 import { LoadingSkeleton } from '@/components/dashboard/loading-skeleton';
 import { WeekView } from '@/components/dashboard/week-view';
 import { useSession } from '@/components/providers/session-provider';
+import { toBucket } from '@/lib/sport-config';
+import type { ActivityBucket } from '@/lib/sport-config';
 import type { DaySummary, WeekData, WeekTotals } from '@/types/dashboard';
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -119,7 +121,11 @@ function buildDays(activities: readonly ActivityDoc[], start: Date, end: Date): 
     const avgHr =
       dayActivities.reduce((s, a) => s + (a.averageHeartrate ?? 0), 0) / dayActivities.length;
     const distanceKm = totalDistance / 1000;
-    const paceSecPerKm = distanceKm > 0 ? totalTime / distanceKm : 0;
+
+    const buckets = new Set(dayActivities.map((a) => toBucket(a.sportType)));
+    const isMixed = buckets.size > 1;
+    const dayBucket: ActivityBucket = isMixed ? 'other' : (buckets.values().next().value ?? 'run');
+    const paceSecPerKm = !isMixed && distanceKm > 0 ? totalTime / distanceKm : undefined;
 
     return {
       dayLabel: DAY_LABELS[dayOfWeek] ?? '',
@@ -128,13 +134,14 @@ function buildDays(activities: readonly ActivityDoc[], start: Date, end: Date): 
       hasActivity: true,
       activityId: primary._id,
       activityType: primary.sportType,
+      activityBucket: dayBucket,
       activityName:
         dayActivities.length > 1
           ? `${primary.name} + ${String(dayActivities.length - 1)} more`
           : primary.name,
       distanceKm: Math.round(distanceKm * 10) / 10,
       durationSec: totalTime,
-      paceSecPerKm: Math.round(paceSecPerKm),
+      paceSecPerKm: paceSecPerKm != null ? Math.round(paceSecPerKm) : undefined,
       averageHeartRate: Math.round(avgHr),
       elevationGainM: Math.round(totalElev),
       calories: Math.round(totalCals),

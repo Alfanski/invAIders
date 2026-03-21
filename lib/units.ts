@@ -20,6 +20,21 @@ export function formatPace(secondsPerKm: number): string {
   return `${String(minutes)}:${seconds.toString().padStart(2, '0')} /km`;
 }
 
+export function formatSpeed(secondsPerKm: number): string {
+  if (secondsPerKm <= 0) return '-- km/h';
+  const kmh = 3600 / secondsPerKm;
+  return `${kmh.toFixed(1)} km/h`;
+}
+
+export function formatSwimPace(secondsPerKm: number): string {
+  if (secondsPerKm <= 0) return '--:-- /100m';
+  const secPer100m = secondsPerKm / 10;
+  const minutes = Math.floor(secPer100m / SECONDS_PER_MINUTE);
+  const seconds = Math.round(secPer100m % SECONDS_PER_MINUTE);
+
+  return `${String(minutes)}:${seconds.toString().padStart(2, '0')} /100m`;
+}
+
 export function formatTemperature(tempCelsius: number): string {
   return `${String(Math.round(tempCelsius))} C`;
 }

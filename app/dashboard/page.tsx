@@ -13,6 +13,7 @@ import { LoadingSkeleton } from '@/components/dashboard/loading-skeleton';
 import { WorkoutView } from '@/components/dashboard/workout-view';
 import { useSession } from '@/components/providers/session-provider';
 import { buildStreams, formatDateLabel, toAnalysisData } from '@/lib/activity-helpers';
+import { toBucket } from '@/lib/sport-config';
 import type { StravaSplit, WorkoutStats } from '@/types/dashboard';
 
 export default function DashboardPage(): ReactNode {
@@ -88,22 +89,25 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
     return <EmptyState title="Activity not found" message="This activity may have been removed." />;
   }
 
+  const bucket = toBucket(activity.sportType);
   const distanceKm = activity.distanceMeters / 1000;
   const paceSecPerKm = activity.movingTimeSec > 0 ? activity.movingTimeSec / distanceKm : 0;
 
   const stats: WorkoutStats = {
+    activityBucket: bucket,
     distanceKm,
     durationSec: activity.movingTimeSec,
     paceSecPerKm,
     averageHeartRate: activity.averageHeartrate ?? 0,
     elevationGainM: activity.totalElevationGainM ?? 0,
     cadenceRpm: activity.averageCadence ?? 0,
+    averageWatts: activity.averageWatts ?? 0,
     calories: activity.calories ?? 0,
     effort: activity.trimp ?? activity.sufferScore ?? 0,
     temperatureC: activity.averageTempC ?? 0,
   };
 
-  const streams = buildStreams(streamResult ?? null);
+  const streams = buildStreams(streamResult ?? null, bucket);
 
   const coachingInsight = analysis
     ? analysis.executiveSummary
@@ -132,11 +136,6 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
 
   return (
     <div className="space-y-5">
-      <ActivityPicker
-        activities={recentActivities}
-        selectedId={activeId}
-        onSelect={setSelectedId}
-      />
       <WorkoutView
         title={activity.name}
         dateLabel={formatDateLabel(activity.startDate)}
@@ -152,6 +151,11 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
         heartRateStream={heartRateStream}
         streamsLoading={streamsFetching}
         gear={gear}
+      />
+      <ActivityPicker
+        activities={recentActivities}
+        selectedId={activeId}
+        onSelect={setSelectedId}
       />
     </div>
   );

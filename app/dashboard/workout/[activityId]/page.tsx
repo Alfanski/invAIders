@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/dashboard/empty-state';
 import { WorkoutView } from '@/components/dashboard/workout-view';
 import { useSession } from '@/components/providers/session-provider';
 import { buildStreams, formatDateLabel, toAnalysisData } from '@/lib/activity-helpers';
+import { toBucket } from '@/lib/sport-config';
 import type { StravaSplit, WorkoutStats } from '@/types/dashboard';
 
 export default function WorkoutPage(): ReactNode {
@@ -81,22 +82,25 @@ function WorkoutContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode
     return <EmptyState title="Activity not found" message="This activity may have been removed." />;
   }
 
+  const bucket = toBucket(activity.sportType);
   const distanceKm = activity.distanceMeters / 1000;
   const paceSecPerKm = activity.movingTimeSec > 0 ? activity.movingTimeSec / distanceKm : 0;
 
   const stats: WorkoutStats = {
+    activityBucket: bucket,
     distanceKm,
     durationSec: activity.movingTimeSec,
     paceSecPerKm,
     averageHeartRate: activity.averageHeartrate ?? 0,
     elevationGainM: activity.totalElevationGainM ?? 0,
     cadenceRpm: activity.averageCadence ?? 0,
+    averageWatts: activity.averageWatts ?? 0,
     calories: activity.calories ?? 0,
     effort: activity.trimp ?? activity.sufferScore ?? 0,
     temperatureC: activity.averageTempC ?? 0,
   };
 
-  const streams = buildStreams(streamResult ?? null);
+  const streams = buildStreams(streamResult ?? null, bucket);
 
   const coachingInsight = analysis
     ? analysis.executiveSummary
@@ -139,13 +143,6 @@ function WorkoutContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode
         </svg>
         Back to dashboard
       </Link>
-      {recentActivities && (
-        <ActivityPicker
-          activities={recentActivities}
-          selectedId={activityId}
-          onSelect={handlePickActivity}
-        />
-      )}
       <WorkoutView
         title={activity.name}
         dateLabel={formatDateLabel(activity.startDate)}
@@ -162,6 +159,13 @@ function WorkoutContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode
         streamsLoading={streamsFetching}
         gear={gear}
       />
+      {recentActivities && (
+        <ActivityPicker
+          activities={recentActivities}
+          selectedId={activityId}
+          onSelect={handlePickActivity}
+        />
+      )}
     </div>
   );
 }

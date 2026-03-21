@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
+import type { ActivityBucket } from '@/lib/sport-config';
+import { getSportConfig } from '@/lib/sport-config';
 import { formatDuration } from '@/lib/units';
 import type { WeekData, WeekTotals } from '@/types/dashboard';
 
@@ -14,8 +16,27 @@ interface WeekViewProps {
   week: WeekData;
 }
 
+function computeDominantBucket(
+  days: readonly { activityBucket?: ActivityBucket | undefined; hasActivity: boolean }[],
+): ActivityBucket | undefined {
+  const counts = new Map<ActivityBucket, number>();
+  for (const d of days) {
+    if (d.hasActivity && d.activityBucket) {
+      counts.set(d.activityBucket, (counts.get(d.activityBucket) ?? 0) + 1);
+    }
+  }
+  if (counts.size === 0) return undefined;
+  if (counts.size === 1) return counts.keys().next().value;
+  const total = [...counts.values()].reduce((a, b) => a + b, 0);
+  for (const [bucket, count] of counts) {
+    if (count / total >= 0.8) return bucket;
+  }
+  return undefined;
+}
+
 export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const dominantBucket = useMemo(() => computeDominantBucket(week.days), [week.days]);
 
   const handleSelect = useCallback((index: number) => {
     setSelectedDay((prev) => (prev === index ? null : index));
@@ -54,7 +75,13 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
       </section>
 
       {/* Week-over-week comparison */}
-      {week.prevTotals && <WeekComparison current={week.totals} previous={week.prevTotals} />}
+      {week.prevTotals && (
+        <WeekComparison
+          current={week.totals}
+          previous={week.prevTotals}
+          dominantBucket={dominantBucket}
+        />
+      )}
 
       {/* AI weekly summary */}
       <section className="glass-panel border-accent/20 p-5">
@@ -179,7 +206,12 @@ function pctChange(curr: number, prev: number): number {
   return ((curr - prev) / prev) * 100;
 }
 
-function WeekComparison({ current, previous }: WeekComparisonProps): ReactNode {
+function WeekComparison({
+  current,
+  previous,
+  dominantBucket,
+}: WeekComparisonProps & { dominantBucket?: ActivityBucket | undefined }): ReactNode {
+  const sportCfg = getSportConfig(dominantBucket ?? 'run');
   const avgPaceCurr = current.distanceKm > 0 ? current.durationSec / current.distanceKm : 0;
   const avgPacePrev = previous.distanceKm > 0 ? previous.durationSec / previous.distanceKm : 0;
 
@@ -197,9 +229,10 @@ function WeekComparison({ current, previous }: WeekComparisonProps): ReactNode {
       higherIsBetter: true,
     },
     {
-      label: 'Avg Pace',
-      current:
-        avgPaceCurr > 0
+      label: dominantBucket ? sportCfg.speedLabel : 'Avg Pace',
+      current: dominantBucket
+        ? sportCfg.formatSpeed(avgPaceCurr)
+        : avgPaceCurr > 0
           ? `${String(Math.floor(avgPaceCurr / 60))}:${String(Math.round(avgPaceCurr % 60)).padStart(2, '0')} /km`
           : '--',
       pctChange: avgPacePrev > 0 ? pctChange(avgPacePrev, avgPaceCurr) : 0,

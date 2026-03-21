@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 
-import { formatDuration, formatPace } from '@/lib/units';
+import { getSportConfig } from '@/lib/sport-config';
+import { formatDuration } from '@/lib/units';
 import type { DaySummary } from '@/types/dashboard';
 
 interface DayDetailProps {
@@ -31,6 +33,8 @@ function DetailRow({ label, value, color }: DetailRowProps): ReactNode {
 }
 
 export function DayDetail({ day }: Readonly<DayDetailProps>): ReactNode {
+  const sportCfg = useMemo(() => getSportConfig(day.activityBucket ?? 'run'), [day.activityBucket]);
+
   if (!day.hasActivity) {
     return (
       <div className="glass-panel p-5">
@@ -79,7 +83,11 @@ export function DayDetail({ day }: Readonly<DayDetailProps>): ReactNode {
           <DetailRow label="Duration" value={formatDuration(day.durationSec)} />
         )}
         {day.paceSecPerKm !== undefined && (
-          <DetailRow label="Avg Pace" value={formatPace(day.paceSecPerKm)} color="#34d399" />
+          <DetailRow
+            label={sportCfg.speedLabel}
+            value={sportCfg.formatSpeed(day.paceSecPerKm)}
+            color="#34d399"
+          />
         )}
         {day.averageHeartRate !== undefined && (
           <DetailRow

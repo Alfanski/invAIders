@@ -3,7 +3,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
-import { formatDuration, formatPace } from '@/lib/units';
+import { getSportConfig } from '@/lib/sport-config';
+import { formatDuration } from '@/lib/units';
 import type {
   AnalysisData,
   HeartRateZone,
@@ -68,19 +69,7 @@ function computeSummary(stream: readonly StreamPoint[]): StreamSummary {
   };
 }
 
-function formatPaceValue(secPerKm: number): string {
-  const m = Math.floor(secPerKm / 60);
-  const s = Math.round(secPerKm % 60);
-  return `${String(m)}:${s.toString().padStart(2, '0')} /km`;
-}
-
-function formatPaceTick(secPerKm: number): string {
-  const m = Math.floor(secPerKm / 60);
-  const s = Math.round(secPerKm % 60);
-  return `${String(m)}:${s.toString().padStart(2, '0')}`;
-}
-
-const CHART_CONFIGS: Record<
+function buildChartConfigs(stats: WorkoutStats): Record<
   string,
   {
     color: string;
@@ -89,18 +78,22 @@ const CHART_CONFIGS: Record<
     formatValue?: (v: number) => string;
     formatTick?: (v: number) => string;
   }
-> = {
-  heartRate: { color: '#f87171', unit: 'bpm' },
-  pace: {
-    color: '#34d399',
-    unit: '/km',
-    invertY: true,
-    formatValue: formatPaceValue,
-    formatTick: formatPaceTick,
-  },
-  elevation: { color: '#60a5fa', unit: 'm' },
-  cadence: { color: '#fbbf24', unit: 'rpm' },
-};
+> {
+  const cfg = getSportConfig(stats.activityBucket);
+  return {
+    heartRate: { color: '#f87171', unit: 'bpm' },
+    pace: {
+      color: '#34d399',
+      unit: cfg.speedUnit,
+      invertY: cfg.invertSpeedAxis,
+      formatValue: cfg.formatSpeed,
+      formatTick: cfg.formatSpeedShort,
+    },
+    elevation: { color: '#60a5fa', unit: 'm' },
+    cadence: { color: '#fbbf24', unit: cfg.cadenceUnit },
+    power: { color: '#a78bfa', unit: 'W' },
+  };
+}
 
 export function WorkoutView({
   title,
@@ -118,14 +111,16 @@ export function WorkoutView({
   streamsLoading = false,
   gear,
 }: Readonly<WorkoutViewProps>): ReactNode {
+  const sportCfg = useMemo(() => getSportConfig(stats.activityBucket), [stats.activityBucket]);
+  const chartConfigs = useMemo(() => buildChartConfigs(stats), [stats]);
   const [expandedMetric, setExpandedMetric] = useState<MetricKey | null>(null);
 
   const toggleMetric = useCallback((key: MetricKey) => {
     setExpandedMetric((prev) => (prev === key ? null : key));
   }, []);
 
-  const metrics: readonly MetricDefinition[] = useMemo(
-    () => [
+  const metrics: readonly MetricDefinition[] = useMemo(() => {
+    const result: MetricDefinition[] = [
       {
         key: 'heartRate' as const,
         label: 'Avg HR',
@@ -137,14 +132,17 @@ export function WorkoutView({
       },
       {
         key: 'pace' as const,
-        label: 'Avg Pace',
-        value: formatPace(stats.paceSecPerKm),
-        unit: '/km',
+        label: sportCfg.speedLabel,
+        value: sportCfg.formatSpeed(stats.paceSecPerKm),
+        unit: sportCfg.speedUnit,
         color: '#34d399',
         stream: streams.pace,
         summary: computeSummary(streams.pace),
       },
-      {
+    ];
+
+    if (sportCfg.showElevation) {
+      result.push({
         key: 'elevation' as const,
         label: 'Elevation',
         value: `${String(Math.round(stats.elevationGainM))} m`,
@@ -152,16 +150,30 @@ export function WorkoutView({
         color: '#60a5fa',
         stream: streams.elevation,
         summary: computeSummary(streams.elevation),
-      },
-      {
-        key: 'cadence' as const,
-        label: 'Cadence',
-        value: `${String(Math.round(stats.cadenceRpm))} rpm`,
-        unit: 'rpm',
-        color: '#fbbf24',
-        stream: streams.cadence,
-        summary: computeSummary(streams.cadence),
-      },
+      });
+    }
+
+    result.push({
+      key: 'cadence' as const,
+      label: sportCfg.cadenceLabel,
+      value: `${String(Math.round(stats.cadenceRpm))} ${sportCfg.cadenceUnit}`,
+      unit: sportCfg.cadenceUnit,
+      color: '#fbbf24',
+      stream: streams.cadence,
+      summary: computeSummary(streams.cadence),
+    });
+
+    if (sportCfg.showPower && stats.averageWatts > 0) {
+      result.push({
+        key: 'effort' as const,
+        label: 'Avg Power',
+        value: `${String(Math.round(stats.averageWatts))} W`,
+        unit: 'W',
+        color: '#a78bfa',
+      });
+    }
+
+    result.push(
       {
         key: 'calories' as const,
         label: 'Calories',
@@ -176,9 +188,10 @@ export function WorkoutView({
         unit: 'TRIMP',
         color: '#c084fc',
       },
-    ],
-    [stats, streams],
-  );
+    );
+
+    return result;
+  }, [stats, streams, sportCfg]);
 
   return (
     <main className="space-y-5">
@@ -192,7 +205,10 @@ export function WorkoutView({
           <div className="flex gap-5">
             <HeroStat label="Distance" value={`${stats.distanceKm.toFixed(1)} km`} />
             <HeroStat label="Duration" value={formatDuration(stats.durationSec)} />
-            <HeroStat label="Pace" value={formatPace(stats.paceSecPerKm)} />
+            <HeroStat
+              label={stats.activityBucket === 'ride' ? 'Speed' : 'Pace'}
+              value={sportCfg.formatSpeed(stats.paceSecPerKm)}
+            />
           </div>
         </div>
       </section>
@@ -265,7 +281,7 @@ export function WorkoutView({
           (() => {
             const active = metrics.find((m) => m.key === expandedMetric);
             if (!active?.stream || !active.summary) return null;
-            const config = CHART_CONFIGS[active.key];
+            const config = chartConfigs[active.key];
             if (!config) return null;
 
             return (
@@ -286,7 +302,9 @@ export function WorkoutView({
       </section>
 
       {/* Split table */}
-      {splits && splits.length > 0 && <SplitTable splits={splits} />}
+      {sportCfg.showSplits && splits && splits.length > 0 && (
+        <SplitTable splits={splits} activityBucket={stats.activityBucket} />
+      )}
 
       {/* HR zone distribution */}
       {heartRateZones &&
