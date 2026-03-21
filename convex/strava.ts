@@ -44,6 +44,11 @@ export const completeOAuth = action({
       ...(args.scope !== undefined ? { scope: args.scope } : {}),
     });
 
+    const backfillStatus = await ctx.runQuery(internal.athletes.getBackfillStatus, { athleteId });
+    if (backfillStatus !== 'complete' && backfillStatus !== 'running') {
+      await ctx.scheduler.runAfter(0, internal.stravaSync.backfillHistory, { athleteId });
+    }
+
     return { athleteId: athleteId as string };
   },
 });

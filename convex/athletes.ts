@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 
-import { internalMutation, query } from './_generated/server';
+import { internalMutation, internalQuery, query } from './_generated/server';
 
 export const upsertFromStrava = internalMutation({
   args: {
@@ -56,6 +56,39 @@ export const getProfile = query({
       .query('athletes')
       .withIndex('by_strava_athlete_id', (q) => q.eq('stravaAthleteId', args.stravaAthleteId))
       .unique();
+  },
+});
+
+export const listAllInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query('athletes').take(100);
+  },
+});
+
+export const getBackfillStatus = internalQuery({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    const athlete = await ctx.db.get(args.athleteId);
+    return athlete?.formBackfillStatus ?? null;
+  },
+});
+
+export const updateBackfillStatus = internalMutation({
+  args: {
+    athleteId: v.id('athletes'),
+    status: v.union(
+      v.literal('idle'),
+      v.literal('running'),
+      v.literal('complete'),
+      v.literal('error'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.athleteId, {
+      formBackfillStatus: args.status,
+      updatedAt: Date.now(),
+    });
   },
 });
 

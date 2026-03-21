@@ -92,6 +92,48 @@ Every activity record tracks its pipeline state:
 - **Husky** -- git hooks (pre-commit, pre-push)
 - **lint-staged** -- runs linters only on staged files for fast commits
 
+## TDD Workflow
+
+Write tests **before or alongside** implementation. Every PR that adds logic
+must include tests.
+
+### Test-first cycle
+
+1. **Red** -- write a failing test that describes the expected behaviour.
+2. **Green** -- write the minimum code to make it pass.
+3. **Refactor** -- clean up while all tests stay green.
+4. Run `npm run test:run` (single run) or `npm run test` (watch) after each
+   change.
+
+### What to test
+
+| Layer                                | Tool                                             | Pattern                                                                   |
+| ------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------- |
+| Pure helpers (`lib/`, `convex/lib/`) | Vitest                                           | Direct import, no mocks needed                                            |
+| Functions that call `fetch`          | Vitest + `vi.fn()` / `vi.spyOn(global, 'fetch')` | Mock fetch, assert URL/headers/body, return fixture                       |
+| Convex mutations/queries             | Convex test harness (future)                     | For now, test extracted pure logic; integration coverage via manual + E2E |
+| React components                     | Vitest + Testing Library (future)                | Render, assert DOM, simulate events                                       |
+| E2E flows                            | Playwright (`e2e/`)                              | Full browser, separate from `npm run test`                                |
+
+### Conventions
+
+- Test files live **next to** the file they test: `foo.ts` -> `foo.test.ts`.
+- Use `describe` blocks grouped by function/method name.
+- Use `it` with behaviour-first phrasing: `it('returns "run" for TrailRun sport type')`.
+- Prefer concrete assertions (`toBe`, `toEqual`, `toContain`) over loose ones
+  (`toBeTruthy`).
+- Mock only external boundaries (network, DB). Never mock the unit under test.
+- Coverage thresholds: 80% statements/branches/functions/lines (enforced in
+  `vitest.config.ts`).
+
+### Running tests
+
+```bash
+npm run test          # watch mode (dev)
+npm run test:run      # single run (CI / pre-push)
+npm run test:coverage # with 80% threshold enforcement
+```
+
 ## Key Patterns
 
 - Strava tokens stored server-side only (Convex restricted table)
