@@ -10,15 +10,21 @@ crons.interval(
   internal.stravaSync.pollNewActivities,
 );
 
-crons.daily(
+crons.cron(
+  'recompute form snapshots at midnight UTC',
+  '0 0 * * *',
+  internal.stravaSync.recomputeFormForAll,
+);
+
+crons.cron(
   'generate daily training plans',
-  { hourUTC: 5, minuteUTC: 0 },
+  '0 5 * * *',
   internal.aiAnalysis.generateDailyPlanForAll,
 );
 
-crons.weekly(
+crons.cron(
   'generate weekly training summaries',
-  { dayOfWeek: 'monday', hourUTC: 6, minuteUTC: 0 },
+  '0 6 * * 1',
   internal.aiAnalysis.generateWeeklySummaryForAll,
 );
 

@@ -390,6 +390,27 @@ export const computeFormSnapshots = internalAction({
 });
 
 // ---------------------------------------------------------------------------
+// recomputeFormForAll: daily cron to recompute CTL/ATL/TSB for every athlete.
+// Ensures rest days are reflected even when no new activities arrive.
+// ---------------------------------------------------------------------------
+
+export const recomputeFormForAll = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const athletes = await ctx.runQuery(internal.athletes.listAllInternal, {});
+    let scheduled = 0;
+    for (const athlete of athletes) {
+      if (athlete.formBackfillStatus !== 'complete') continue;
+      await ctx.scheduler.runAfter(0, internal.stravaSync.computeFormSnapshots, {
+        athleteId: athlete._id,
+      });
+      scheduled++;
+    }
+    console.log(`[cron] Scheduled form recompute for ${String(scheduled)} athletes`);
+  },
+});
+
+// ---------------------------------------------------------------------------
 // pollNewActivities: incremental fetch of activities since last known
 // Runs on a cron schedule. API cost: 1 call per athlete (typically).
 // ---------------------------------------------------------------------------
