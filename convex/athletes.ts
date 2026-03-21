@@ -66,6 +66,16 @@ export const getById = internalQuery({
   },
 });
 
+export const getByStravaAthleteId = internalQuery({
+  args: { stravaAthleteId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('athletes')
+      .withIndex('by_strava_athlete_id', (q) => q.eq('stravaAthleteId', args.stravaAthleteId))
+      .unique();
+  },
+});
+
 export const listAllInternal = internalQuery({
   args: {},
   handler: async (ctx) => {

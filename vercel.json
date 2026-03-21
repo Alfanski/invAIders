@@ -2,7 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "env": {
+    "NEXT_PUBLIC_CONVEX_URL": "https://fine-ibex-73.eu-west-1.convex.cloud",
+    "CONVEX_URL": "https://fine-ibex-73.eu-west-1.convex.cloud",
     "STRAVA_CLIENT_ID": "214497",
-    "STRAVA_REDIRECT_URI": "https://strava-webhook-poc.vercel.app/api/auth/strava/callback"
+    "STRAVA_REDIRECT_URI": "https://coachagent.vercel.app/api/auth/strava/callback",
+    "N8N_STRAVA_WEBHOOK_URL": "https://lorenzo-hackathon.app.n8n.cloud/webhook/7802ff7f-6971-4bfe-b8a9-334b7dd96a13",
+    "STRAVA_WEBHOOK_VERIFY_TOKEN": "69e58502276cef8935cd6b42fcbad4ad"
   }
 }

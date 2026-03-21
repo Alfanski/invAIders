@@ -1,11 +1,7 @@
 {
-  "updatedAt": "2026-03-21T14:00:40.996Z",
-  "createdAt": "2026-03-21T13:40:01.935Z",
   "id": "BduAY2rrLyipfB38",
-  "name": "mAICoachTest",
-  "description": null,
+  "name": "mAICoach Analysis Pipeline",
   "active": false,
-  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -15,77 +11,280 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 0],
+      "position": [250, 300],
       "id": "b1952cf4-9ae4-41ae-b854-6bbf77240671",
       "name": "Webhook",
       "webhookId": "7802ff7f-6971-4bfe-b8a9-334b7dd96a13"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/token",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ stravaAthleteId: $json.ownerId, secret: $env.CONVEX_WEBHOOK_SECRET }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "id": "f2d3e4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60",
+      "name": "Get Token"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.strava.com/api/v3/activities/{{ $('Webhook').first().json.stravaActivityId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [750, 300],
+      "id": "a1b2c3d4-e5f6-4789-abcd-ef0123456789",
+      "name": "Fetch Activity"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.strava.com/api/v3/activities/{{ $('Webhook').first().json.stravaActivityId }}/streams?keys=time,latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp,grade_smooth&key_type=type",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Token').first().json.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 300],
+      "id": "11223344-5566-4778-899a-aabbccddeeff",
+      "name": "Fetch Streams"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/activity",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: $env.CONVEX_WEBHOOK_SECRET, athleteId: $('Get Token').first().json.athleteId, stravaActivity: $('Fetch Activity').first().json }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 300],
+      "id": "aabb1122-3344-4556-6778-8899aabbccdd",
+      "name": "Upsert Activity"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/status",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: $env.CONVEX_WEBHOOK_SECRET, activityId: $json.activityId, status: 'analyzing' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "id": "12345678-abcd-4ef0-1234-567890abcdef",
+      "name": "Set Status Analyzing"
+    },
+    {
+      "parameters": {
+        "jsCode": "const activity = $('Fetch Activity').first().json;\nconst streamsRaw = $('Fetch Streams').first().json;\n\n// Strava returns array of stream objects; reconstruct as keyed object\nconst streamArray = Array.isArray(streamsRaw) ? streamsRaw : [streamsRaw];\nconst streams = {};\nfor (const s of streamArray) {\n  const key = s.series_type || s.type;\n  if (key) streams[key] = s;\n}\n\nconst timeData = streams.time?.data || [];\nif (timeData.length === 0) {\n  return [{ json: { downsampled: null, scoutPrompt: 'No stream data. Analyze based on activity summary only.\\n' + JSON.stringify({ name: activity.name, type: activity.sport_type, distance: activity.distance, moving_time: activity.moving_time }, null, 2) } }];\n}\n\n// Downsample (rolling window avg, ~500 points max)\nconst durationSec = timeData[timeData.length - 1] || 0;\nconst windowSec = Math.max(30, Math.ceil(durationSec / 500));\nfunction avgSlice(data, start, end) {\n  let sum = 0, count = 0;\n  for (let i = start; i < end; i++) { if (data[i] !== undefined) { sum += data[i]; count++; } }\n  return count > 0 ? Math.round((sum / count) * 100) / 100 : 0;\n}\n\nconst ds = { timeSec: [], meta: { windowSec, pointCount: 0 } };\nconst hrData = streams.heartrate?.data;\nconst velData = streams.velocity_smooth?.data;\nconst altData = streams.altitude?.data;\nconst cadData = streams.cadence?.data;\nconst distData = streams.distance?.data;\nconst latlngData = streams.latlng?.data;\nconst gradeData = streams.grade_smooth?.data;\n\nif (hrData) ds.heartrateBpm = [];\nif (velData) ds.velocitySmooth = [];\nif (altData) ds.altitudeM = [];\nif (cadData) ds.cadenceRpm = [];\nif (distData) ds.distanceM = [];\nif (latlngData) ds.latlng = [];\nif (gradeData) ds.gradeSmooth = [];\n\nlet wStart = 0;\nwhile (wStart < timeData.length) {\n  const wTime = timeData[wStart] || 0;\n  let wEnd = wStart;\n  while (wEnd < timeData.length && (timeData[wEnd] || 0) < wTime + windowSec) wEnd++;\n  if (wEnd === wStart) wEnd++;\n  ds.timeSec.push(wTime);\n  if (distData && ds.distanceM) ds.distanceM.push(distData[wEnd - 1] || 0);\n  if (latlngData && ds.latlng) { const p = latlngData[wEnd-1]; ds.latlng.push(p ? [p[0],p[1]] : [0,0]); }\n  if (altData && ds.altitudeM) ds.altitudeM.push(avgSlice(altData, wStart, wEnd));\n  if (hrData && ds.heartrateBpm) ds.heartrateBpm.push(avgSlice(hrData, wStart, wEnd));\n  if (velData && ds.velocitySmooth) ds.velocitySmooth.push(avgSlice(velData, wStart, wEnd));\n  if (cadData && ds.cadenceRpm) ds.cadenceRpm.push(avgSlice(cadData, wStart, wEnd));\n  if (gradeData && ds.gradeSmooth) ds.gradeSmooth.push(avgSlice(gradeData, wStart, wEnd));\n  wStart = wEnd;\n}\nds.meta.pointCount = ds.timeSec.length;\n\n// Compute HR drift for scout\nlet hrDrift = null;\nif (hrData && hrData.length > 10) {\n  const first20 = avgSlice(hrData, 0, Math.floor(hrData.length * 0.2));\n  const last20 = avgSlice(hrData, Math.floor(hrData.length * 0.8), hrData.length);\n  hrDrift = Math.round(last20 - first20);\n}\n\n// Build scout prompt\nconst distKm = (activity.distance / 1000).toFixed(2);\nconst durMin = Math.round(activity.moving_time / 60);\nconst ps = activity.distance > 0 ? Math.round(activity.moving_time / (activity.distance / 1000)) : 0;\nconst paceStr = Math.floor(ps/60) + ':' + String(ps%60).padStart(2,'0');\n\nlet sp = 'Analyze this workout and return JSON with: workoutClassification (string), keyObservations (array of 3-5 strings), analysisDirectives (array of 2-3 strings), relevantCoachingFrameworks (array of strings).\\n\\n';\nsp += '## Activity\\n';\nsp += '- Name: ' + activity.name + '\\n';\nsp += '- Type: ' + activity.sport_type + '\\n';\nsp += '- Distance: ' + distKm + ' km\\n';\nsp += '- Duration: ' + durMin + ' min\\n';\nsp += '- Pace: ' + paceStr + ' /km\\n';\nsp += '- Elevation: ' + (activity.total_elevation_gain || 0) + ' m\\n';\nif (activity.average_heartrate) sp += '- Avg HR: ' + Math.round(activity.average_heartrate) + ' bpm\\n';\nif (activity.max_heartrate) sp += '- Max HR: ' + Math.round(activity.max_heartrate) + ' bpm\\n';\nif (hrDrift !== null) sp += '- HR Drift: ' + (hrDrift > 0 ? '+' : '') + hrDrift + ' bpm\\n';\nif (activity.average_cadence) sp += '- Cadence: ' + Math.round(activity.average_cadence) + ' rpm\\n';\n\nif (activity.splits_metric && Array.isArray(activity.splits_metric)) {\n  sp += '\\n## Splits\\n';\n  for (const s of activity.splits_metric) {\n    const splitPace = s.average_speed > 0 ? Math.round(1000 / s.average_speed) : 0;\n    sp += 'Km ' + s.split + ': ' + Math.floor(splitPace/60) + ':' + String(splitPace%60).padStart(2,'0') + ' /km';\n    if (s.average_heartrate) sp += ' (' + Math.round(s.average_heartrate) + ' bpm)';\n    sp += '\\n';\n  }\n}\n\nreturn [{ json: { downsampled: ds, scoutPrompt: sp, hrDrift } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1750, 300],
+      "id": "ccdd1234-5678-4abc-def0-123456789abc",
+      "name": "Code Downsample"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.scoutPrompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: 'You are a sports data analyst specializing in endurance training. Examine the workout data and produce a structured JSON analysis brief. Focus on identifying the workout type, key patterns in the data, and what a coach should focus their analysis on. Be specific and data-driven.' }] } }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 300],
+      "id": "dd112233-4455-4667-8899-aabbccddeef0",
+      "name": "Scout Gemini"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse scout response\nconst scoutResp = $json;\nconst scoutText = scoutResp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet scout;\ntry { scout = JSON.parse(scoutText); } catch { scout = { workoutClassification: 'unknown', keyObservations: [], analysisDirectives: [] }; }\n\nconst activity = $('Fetch Activity').first().json;\nconst tokenData = $('Get Token').first().json;\nconst dsData = $('Code Downsample').first().json;\n\nconst distKm = (activity.distance / 1000).toFixed(2);\nconst durMin = Math.round(activity.moving_time / 60);\nconst ps = activity.distance > 0 ? Math.round(activity.moving_time / (activity.distance / 1000)) : 0;\nconst paceStr = Math.floor(ps/60) + ':' + String(ps%60).padStart(2,'0');\n\nconst systemPrompt = 'You are mAIcoach, an expert AI running and cycling coach. Analyze workout data with the insight of an experienced coach, providing specific, actionable feedback. Be encouraging but honest. Use data to support observations. Use metric units (km, min/km, bpm). Never fabricate data -- only reference numbers from the provided context.';\n\nlet prompt = 'Analyze this workout and return a JSON object with these exact fields:\\n';\nprompt += '- effortScore (integer 1-10)\\n';\nprompt += '- executiveSummary (2-3 sentences)\\n';\nprompt += '- positives (array of 2-4 short strings)\\n';\nprompt += '- improvements (array of 1-3 short strings)\\n';\nprompt += '- splitAnalysis (object with \"trend\" and \"comment\" strings, or null)\\n';\nprompt += '- nextSession (object with \"type\", \"durationMin\" number, \"intensity\", \"description\")\\n';\nprompt += '- voiceSummary (1-2 sentence audio-friendly summary)\\n\\n';\n\nprompt += '## Pre-Analysis Scout Brief\\n';\nprompt += '- Classification: ' + (scout.workoutClassification || 'N/A') + '\\n';\nprompt += '- Observations: ' + (scout.keyObservations || []).join('; ') + '\\n';\nprompt += '- Focus areas: ' + (scout.analysisDirectives || []).join('; ') + '\\n\\n';\n\nprompt += '## Workout Data\\n';\nprompt += '- Name: ' + activity.name + '\\n';\nprompt += '- Type: ' + activity.sport_type + '\\n';\nprompt += '- Distance: ' + distKm + ' km\\n';\nprompt += '- Duration: ' + durMin + ' min\\n';\nprompt += '- Avg Pace: ' + paceStr + ' /km\\n';\nprompt += '- Elevation: ' + (activity.total_elevation_gain || 0) + ' m\\n';\nif (activity.average_heartrate) prompt += '- Avg HR: ' + Math.round(activity.average_heartrate) + ' bpm\\n';\nif (activity.max_heartrate) prompt += '- Max HR: ' + Math.round(activity.max_heartrate) + ' bpm\\n';\nif (activity.average_cadence) prompt += '- Cadence: ' + Math.round(activity.average_cadence) + ' rpm\\n';\nif (activity.calories) prompt += '- Calories: ' + activity.calories + '\\n';\n\nif (dsData.hrDrift !== null && dsData.hrDrift !== undefined) {\n  prompt += '- HR Drift: ' + (dsData.hrDrift > 0 ? '+' : '') + dsData.hrDrift + ' bpm\\n';\n}\n\nif (activity.splits_metric && Array.isArray(activity.splits_metric)) {\n  prompt += '\\n## Splits\\n';\n  for (const s of activity.splits_metric) {\n    const splitPace = s.average_speed > 0 ? Math.round(1000 / s.average_speed) : 0;\n    prompt += 'Km ' + s.split + ': ' + Math.floor(splitPace/60) + ':' + String(splitPace%60).padStart(2,'0') + ' /km';\n    if (s.average_heartrate) prompt += ' (' + Math.round(s.average_heartrate) + ' bpm)';\n    prompt += '\\n';\n  }\n}\n\nprompt += '\\n## Athlete: ' + tokenData.athleteName + '\\n';\n\nreturn [{ json: { analysisPrompt: prompt, systemPrompt, scout } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 300],
+      "id": "ee112233-4455-4667-8899-aabbccddeef1",
+      "name": "Code Build Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.analysisPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: $json.systemPrompt }] } }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2500, 300],
+      "id": "ff112233-4455-4667-8899-aabbccddeef2",
+      "name": "Analysis Gemini"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = 'gemini-2.0-flash';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2750, 300],
+      "id": "00112233-4455-4667-8899-aabbccddeef3",
+      "name": "Code Parse Analysis"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/analysis",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: $env.CONVEX_WEBHOOK_SECRET, activityId: $json.activityId, analysis: $json.analysis, streams: $json.downsampled }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3000, 300],
+      "id": "11223344-5566-4778-899a-bbccddeeff00",
+      "name": "Store Analysis"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "done-activity",
+              "name": "activityName",
+              "value": "={{ $('Code Parse Analysis').first().json.activityName }}",
+              "type": "string"
+            },
+            {
+              "id": "done-summary",
+              "name": "executiveSummary",
+              "value": "={{ $('Code Parse Analysis').first().json.executiveSummary }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3250, 300],
+      "id": "22334455-6677-4889-9aab-bccddee0ff11",
+      "name": "Pipeline Complete"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [2000, 600],
+      "id": "33445566-7788-4990-aabb-ccddee0ff122",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "err-msg",
+              "name": "errorMessage",
+              "value": "={{ $json.execution?.error?.message || 'Unknown error' }}",
+              "type": "string"
+            },
+            {
+              "id": "err-node",
+              "name": "failedNode",
+              "value": "={{ $json.execution?.lastNodeExecuted || 'unknown' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2250, 600],
+      "id": "44556677-8899-4aa0-bbcc-ddee0ff12233",
+      "name": "Log Error"
     }
   ],
-  "connections": {},
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Get Token", "type": "main", "index": 0 }]]
+    },
+    "Get Token": {
+      "main": [[{ "node": "Fetch Activity", "type": "main", "index": 0 }]]
+    },
+    "Fetch Activity": {
+      "main": [[{ "node": "Fetch Streams", "type": "main", "index": 0 }]]
+    },
+    "Fetch Streams": {
+      "main": [[{ "node": "Upsert Activity", "type": "main", "index": 0 }]]
+    },
+    "Upsert Activity": {
+      "main": [[{ "node": "Set Status Analyzing", "type": "main", "index": 0 }]]
+    },
+    "Set Status Analyzing": {
+      "main": [[{ "node": "Code Downsample", "type": "main", "index": 0 }]]
+    },
+    "Code Downsample": {
+      "main": [[{ "node": "Scout Gemini", "type": "main", "index": 0 }]]
+    },
+    "Scout Gemini": {
+      "main": [[{ "node": "Code Build Prompt", "type": "main", "index": 0 }]]
+    },
+    "Code Build Prompt": {
+      "main": [[{ "node": "Analysis Gemini", "type": "main", "index": 0 }]]
+    },
+    "Analysis Gemini": {
+      "main": [[{ "node": "Code Parse Analysis", "type": "main", "index": 0 }]]
+    },
+    "Code Parse Analysis": {
+      "main": [[{ "node": "Store Analysis", "type": "main", "index": 0 }]]
+    },
+    "Store Analysis": {
+      "main": [[{ "node": "Pipeline Complete", "type": "main", "index": 0 }]]
+    },
+    "Error Trigger": {
+      "main": [[{ "node": "Log Error", "type": "main", "index": 0 }]]
+    }
   },
-  "staticData": null,
-  "meta": null,
-  "pinData": {},
-  "versionId": "abcdfae5-f8cc-4ca8-b679-f68d22552e41",
-  "activeVersionId": null,
-  "versionCounter": 2,
-  "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-03-21T14:02:03.390Z",
-      "createdAt": "2026-03-21T14:02:03.390Z",
-      "role": "workflow:editor",
-      "workflowId": "BduAY2rrLyipfB38",
-      "projectId": "VCNUmiFc5QVDMcOU",
-      "project": {
-        "updatedAt": "2026-03-21T10:19:25.324Z",
-        "createdAt": "2026-03-21T10:09:36.540Z",
-        "id": "VCNUmiFc5QVDMcOU",
-        "name": "Christoph Sch\u00e4fer <christophschaefer44@gmail.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "95b4c01a-35c5-4ee3-9f44-994b8c5467a3"
-      }
-    },
-    {
-      "updatedAt": "2026-03-21T14:02:03.391Z",
-      "createdAt": "2026-03-21T14:02:03.391Z",
-      "role": "workflow:editor",
-      "workflowId": "BduAY2rrLyipfB38",
-      "projectId": "pkpqR86dlS0HanTX",
-      "project": {
-        "updatedAt": "2026-03-21T10:10:16.766Z",
-        "createdAt": "2026-03-21T10:09:36.540Z",
-        "id": "pkpqR86dlS0HanTX",
-        "name": "Klaus Freiberger <klaus-freiberger@web.de>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "9f9f114b-b56e-49d7-9622-56d268f315f1"
-      }
-    },
-    {
-      "updatedAt": "2026-03-21T13:40:01.939Z",
-      "createdAt": "2026-03-21T13:40:01.939Z",
-      "role": "workflow:owner",
-      "workflowId": "BduAY2rrLyipfB38",
-      "projectId": "xYIYON5ZIIUPTZ75",
-      "project": {
-        "updatedAt": "2026-03-21T10:07:36.019Z",
-        "createdAt": "2026-03-21T10:07:30.592Z",
-        "id": "xYIYON5ZIIUPTZ75",
-        "name": "Lorenzo Russo da Costa Auer <lorenzo.hackathon@gmail.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "61850c73-7257-493c-a32b-d0000dfdcbc0"
-      }
-    }
-  ],
-  "tags": [],
-  "activeVersion": null
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

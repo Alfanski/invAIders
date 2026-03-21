@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 
 import { api, internal } from './_generated/api';
-import type { Doc } from './_generated/dataModel';
 import { action, internalAction } from './_generated/server';
 import { generateJSON, generateText, GeminiError } from './lib/gemini';
 
@@ -12,184 +11,16 @@ Speak in first person as the coach. Keep language conversational but precise.
 Use metric units (km, min/km pace, bpm, meters elevation).
 Never fabricate data -- only reference numbers that appear in the provided context.`;
 
-interface WorkoutAnalysis {
-  effortScore: number;
-  executiveSummary: string;
-  positives: string[];
-  improvements: string[];
-  splitAnalysis?: { trend: string; comment: string };
-  nextSession?: {
-    type: string;
-    durationMin: number;
-    intensity: string;
-    description: string;
-  };
-  voiceSummary: string;
-}
-
-export const analyzeWorkout = internalAction({
-  args: { activityId: v.id('activities') },
-  handler: async (ctx, args) => {
-    const activity = await ctx.runQuery(internal.activities.getByDocId, {
-      activityId: args.activityId,
-    });
-    if (!activity) {
-      console.warn(`Activity ${args.activityId} not found for analysis`);
-      return;
-    }
-
-    const existingAnalysis = await ctx.runQuery(api.analyses.getForActivity, {
-      activityId: args.activityId,
-    });
-    if (existingAnalysis) return;
-
-    const streams = await ctx.runQuery(api.activityStreams.getDownsampledForActivity, {
-      activityId: args.activityId,
-    });
-
-    const athlete = await ctx.runQuery(internal.athletes.getById, {
-      athleteId: activity.athleteId,
-    });
-
-    const formSnapshot = await ctx.runQuery(api.formSnapshots.getLatestForAthlete, {
-      athleteId: activity.athleteId,
-    });
-
-    const prompt = buildWorkoutPrompt(activity, streams ?? null, athlete ?? null, formSnapshot);
-
-    try {
-      const analysis = await generateJSON<WorkoutAnalysis>(prompt, {
-        systemPrompt: COACH_SYSTEM_PROMPT,
-        temperature: 0.4,
-        maxTokens: 2048,
-      });
-
-      await ctx.runMutation(internal.analyses.upsertForActivity, {
-        activityId: args.activityId,
-        model: 'gemini-2.0-flash',
-        effortScore: analysis.effortScore,
-        executiveSummary: analysis.executiveSummary,
-        positives: analysis.positives,
-        improvements: analysis.improvements,
-        ...(analysis.splitAnalysis ? { splitAnalysis: analysis.splitAnalysis } : {}),
-        ...(analysis.nextSession ? { nextSession: analysis.nextSession } : {}),
-        voiceSummary: analysis.voiceSummary,
-      });
-
-      await ctx.runMutation(internal.activities.updateStatus, {
-        activityId: args.activityId,
-        processingStatus: 'complete',
-      });
-
-      console.log(`Analyzed activity ${args.activityId}`);
-    } catch (err) {
-      const msg = err instanceof GeminiError ? err.message : String(err);
-      console.error(`Analysis failed for ${args.activityId}: ${msg}`);
-      await ctx.runMutation(internal.activities.updateStatus, {
-        activityId: args.activityId,
-        processingStatus: 'error',
-        processingError: msg.slice(0, 500),
-      });
-    }
-  },
-});
-
-function buildWorkoutPrompt(
-  activity: Doc<'activities'>,
-  streams: Doc<'activityStreams'> | null,
-  athlete: Doc<'athletes'> | null,
-  formSnapshot: Doc<'formSnapshots'> | null,
-): string {
-  const distKm = (activity.distanceMeters / 1000).toFixed(2);
-  const durationMin = Math.round(activity.movingTimeSec / 60);
-  const paceSecPerKm =
-    activity.distanceMeters > 0
-      ? Math.round(activity.movingTimeSec / (activity.distanceMeters / 1000))
-      : 0;
-  const paceMin = Math.floor(paceSecPerKm / 60);
-  const paceSec = paceSecPerKm % 60;
-
-  let prompt = `Analyze this workout and return a JSON object with these fields:
-- effortScore (1-10 integer)
-- executiveSummary (2-3 sentences)
-- positives (array of 2-4 short bullet points)
-- improvements (array of 1-3 short bullet points)
-- splitAnalysis (optional object with "trend" and "comment" fields)
-- nextSession (object with "type", "durationMin", "intensity", "description" fields)
-- voiceSummary (1-2 sentence audio-friendly summary)
-
-## Workout Data
-- Name: ${activity.name}
-- Type: ${activity.sportType}
-- Distance: ${distKm} km
-- Duration: ${String(durationMin)} minutes
-- Avg Pace: ${String(paceMin)}:${String(paceSec).padStart(2, '0')} /km
-- Elevation Gain: ${String(activity.totalElevationGainM ?? 0)} m`;
-
-  if (activity.averageHeartrate) {
-    prompt += `\n- Avg HR: ${String(Math.round(activity.averageHeartrate))} bpm`;
-  }
-  if (activity.maxHeartrate) {
-    prompt += `\n- Max HR: ${String(Math.round(activity.maxHeartrate))} bpm`;
-  }
-  if (activity.averageCadence) {
-    prompt += `\n- Avg Cadence: ${String(Math.round(activity.averageCadence))} rpm`;
-  }
-  if (activity.calories) {
-    prompt += `\n- Calories: ${String(activity.calories)}`;
-  }
-  if (activity.trimp) {
-    prompt += `\n- TRIMP: ${String(Math.round(activity.trimp))}`;
-  }
-
-  if (activity.splitsMetric && Array.isArray(activity.splitsMetric)) {
-    prompt += '\n\n## Splits (per km)';
-    const splits = activity.splitsMetric as {
-      split: number;
-      average_speed: number;
-      average_heartrate?: number;
-    }[];
-    for (const split of splits) {
-      const splitPace = split.average_speed > 0 ? Math.round(1000 / split.average_speed) : 0;
-      const splitPaceMin = Math.floor(splitPace / 60);
-      const splitPaceSec = splitPace % 60;
-      prompt += `\nKm ${String(split.split)}: ${String(splitPaceMin)}:${String(splitPaceSec).padStart(2, '0')} /km`;
-      if (split.average_heartrate) {
-        prompt += ` (${String(Math.round(split.average_heartrate))} bpm)`;
-      }
-    }
-  }
-
-  if (streams?.stats) {
-    prompt += '\n\n## Stream Statistics';
-    const s = streams.stats;
-    if (s.heartrateBpm) {
-      prompt += `\n- HR: min=${String(s.heartrateBpm.min)} avg=${String(s.heartrateBpm.avg)} max=${String(s.heartrateBpm.max)} bpm`;
-    }
-    if (s.velocitySmooth) {
-      const minPace = s.velocitySmooth.min > 0 ? Math.round(1000 / s.velocitySmooth.max) : 0;
-      const maxPace = s.velocitySmooth.max > 0 ? Math.round(1000 / s.velocitySmooth.min) : 0;
-      prompt += `\n- Pace range: ${String(Math.floor(minPace / 60))}:${String(minPace % 60).padStart(2, '0')} - ${String(Math.floor(maxPace / 60))}:${String(maxPace % 60).padStart(2, '0')} /km`;
-    }
-  }
-
-  if (athlete) {
-    prompt += '\n\n## Athlete Context';
-    if (athlete.sex) prompt += `\n- Sex: ${athlete.sex}`;
-    if (athlete.weightKg) prompt += `\n- Weight: ${String(athlete.weightKg)} kg`;
-    if (athlete.goalText) prompt += `\n- Goal: ${athlete.goalText}`;
-  }
-
-  if (formSnapshot) {
-    prompt += '\n\n## Current Training Form';
-    prompt += `\n- CTL (Fitness): ${String(formSnapshot.ctl)}`;
-    prompt += `\n- ATL (Fatigue): ${String(formSnapshot.atl)}`;
-    prompt += `\n- TSB (Form): ${String(formSnapshot.tsb)}`;
-    if (formSnapshot.acwr) prompt += `\n- ACWR: ${String(formSnapshot.acwr)}`;
-  }
-
-  return prompt;
-}
+// -----------------------------------------------------------------------
+// analyzeWorkout + buildWorkoutPrompt — SUPERSEDED by n8n pipeline
+// Single-workout analysis is now handled entirely in the n8n workflow
+// (see n8n/workflows/maicoachtest.json). These are kept for reference.
+// -----------------------------------------------------------------------
+//
+// interface WorkoutAnalysis { ... }
+// export const analyzeWorkout = internalAction({ ... });
+// function buildWorkoutPrompt(...) { ... }
+//
 
 interface WeeklySummaryResult {
   executiveSummary: string;
