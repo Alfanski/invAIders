@@ -71,6 +71,32 @@ curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows"
 - **Git Integration:** Auto-deploys on push to `main`
 - **Env vars for preview scope:** CLI has a bug (v50+), use REST API instead (see `tasks/lessons.md`)
 
+### CI/CD (GitHub Actions)
+
+Two workflows in `.github/workflows/`:
+
+- **`ci.yml`** — Runs `npm run validate` on pull requests to `main`.
+- **`deploy.yml`** — On push to `main`: validates, deploys Convex
+  (`scripts/deploy-prod.sh`), and pushes n8n workflow JSON (only when
+  `n8n/` files changed). Vercel deploys automatically via Git Integration.
+
+**Required GitHub Secrets** (repo → Settings → Secrets → Actions):
+
+| Secret                   | Purpose                      |
+| ------------------------ | ---------------------------- |
+| `CONVEX_DEPLOY_KEY`      | Convex production deploy key |
+| `STRAVA_CLIENT_ID`       | Convex env var               |
+| `STRAVA_CLIENT_SECRET`   | Convex env var               |
+| `GEMINI_API_KEY`         | Convex env var               |
+| `CONVEX_WEBHOOK_SECRET`  | Convex env var               |
+| `SESSION_SECRET`         | Convex env var               |
+| `ELEVENLABS_API_KEY`     | Convex env var               |
+| `ELEVENLABS_VOICE_ID`    | Convex env var               |
+| `N8N_STRAVA_WEBHOOK_URL` | Convex env var               |
+| `APP_URL`                | Convex env var               |
+| `N8N_BASE_URL`           | n8n Cloud instance URL       |
+| `N8N_API_KEY`            | n8n Cloud API key            |
+
 ### Strava Webhook
 
 - **Endpoint:** `https://maicoach.vercel.app/api/webhooks/strava`
@@ -102,11 +128,12 @@ Every activity record tracks its pipeline state:
 
 ## Quality Gates
 
-| Gate             | Hook                | What runs                                                                      |
-| ---------------- | ------------------- | ------------------------------------------------------------------------------ |
-| **Pre-commit**   | `.husky/pre-commit` | lint-staged (ESLint --fix + Prettier on staged .ts/.tsx), Vitest related tests |
-| **Pre-push**     | `.husky/pre-push`   | Full type-check (tsc --noEmit), full test suite                                |
-| **CI (planned)** | GitHub Actions      | validate (type-check + lint + format:check + test:run)                         |
+| Gate           | Hook                           | What runs                                                                      |
+| -------------- | ------------------------------ | ------------------------------------------------------------------------------ |
+| **Pre-commit** | `.husky/pre-commit`            | lint-staged (ESLint --fix + Prettier on staged .ts/.tsx), Vitest related tests |
+| **Pre-push**   | `.husky/pre-push`              | Full type-check (tsc --noEmit), full test suite                                |
+| **CI (PR)**    | `.github/workflows/ci.yml`     | validate (type-check + lint + format:check + test:run)                         |
+| **CD (main)**  | `.github/workflows/deploy.yml` | validate → deploy Convex → deploy n8n workflows                                |
 
 ### Tooling
 

@@ -116,7 +116,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.scoutPrompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: 'You are a sports data analyst specializing in endurance training. Examine the workout data and produce a structured JSON analysis brief. Focus on identifying the workout type, key patterns in the data, and what a coach should focus their analysis on. Be specific and data-driven.' }] } }) }}",
@@ -143,7 +143,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.analysisPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: $json.systemPrompt }] } }) }}",
@@ -159,7 +159,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = 'gemini-2.0-flash';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
+        "jsCode": "const resp = $json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = 'gemini-2.5-flash';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
