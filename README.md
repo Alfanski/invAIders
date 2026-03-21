@@ -87,6 +87,26 @@ This will prompt you to log in and create a project. It writes `CONVEX_DEPLOYMEN
 
 If Convex is already set up, just make sure `NEXT_PUBLIC_CONVEX_URL` is present in `.env.local`.
 
+### Team Setup (Shared Deployment)
+
+To share a single Convex deployment so everyone works against the same data:
+
+1. **One person** initializes the project with `npx convex dev` (see above)
+2. Share these values from your `.env.local` with the team:
+   ```
+   CONVEX_DEPLOYMENT=dev:fine-ibex-73
+   NEXT_PUBLIC_CONVEX_URL=https://fine-ibex-73.eu-west-1.convex.cloud
+   CONVEX_DEPLOY_KEY=<dev deploy key>
+   ```
+3. Generate the `CONVEX_DEPLOY_KEY` from the [Convex dashboard](https://dashboard.convex.dev) → Project Settings → Deploy Key
+4. Invite teammates to the project via the dashboard (Settings → Members) so they can view tables and logs
+
+**Important: only one person should run `npx convex dev` at a time.** The file watcher pushes schema and functions on every save — multiple watchers will overwrite each other, causing unpredictable behavior. Everyone else should:
+
+- Run only `npx next dev` for the frontend (it connects to the shared Convex URL)
+- Use `npx convex dev --once` when they need to push a backend change
+- Pull the latest code from git before pushing to avoid overwriting
+
 ### 5. Run the App
 
 ```bash
@@ -109,6 +129,7 @@ When deploying to Vercel, update the **Authorization Callback Domain** on your S
 | Variable                 | Required | Where to get it                                                |
 | ------------------------ | -------- | -------------------------------------------------------------- |
 | `NEXT_PUBLIC_CONVEX_URL` | Yes      | Auto-set by `npx convex dev`                                   |
+| `CONVEX_DEPLOY_KEY`      | Yes      | [Convex dashboard](https://dashboard.convex.dev) → Deploy Key  |
 | `STRAVA_CLIENT_ID`       | Yes      | [strava.com/settings/api](https://www.strava.com/settings/api) |
 | `STRAVA_CLIENT_SECRET`   | Yes      | Same page, click "show"                                        |
 | `STRAVA_REDIRECT_URI`    | Yes      | `http://localhost:3000/api/auth/strava/callback` for local dev |
