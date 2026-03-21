@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 
-import { internalMutation, internalQuery } from './_generated/server';
+import { internalMutation, internalQuery, query } from './_generated/server';
 
 export const upsertForActivity = internalMutation({
   args: {
@@ -52,5 +52,15 @@ export const getForActivity = internalQuery({
       .query('activityStreams')
       .withIndex('by_activity', (q) => q.eq('activityId', args.activityId))
       .take(10);
+  },
+});
+
+export const getDownsampledForActivity = query({
+  args: { activityId: v.id('activities') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('activityStreams')
+      .withIndex('by_activity', (q) => q.eq('activityId', args.activityId))
+      .first();
   },
 });

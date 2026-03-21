@@ -115,6 +115,28 @@ export const listAll = internalQuery({
   },
 });
 
+export const getLatestForAthlete = query({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('activities')
+      .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
+      .order('desc')
+      .first();
+  },
+});
+
+export const listRecentForAthlete = query({
+  args: { athleteId: v.id('athletes'), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('activities')
+      .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
+      .order('desc')
+      .take(args.limit ?? 200);
+  },
+});
+
 export const listStravaIdsForAthlete = internalQuery({
   args: { athleteId: v.id('athletes') },
   handler: async (ctx, args) => {

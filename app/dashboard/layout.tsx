@@ -5,10 +5,14 @@ import { CoachOrb } from '@/components/coach/coach-orb';
 import { CoachPanel } from '@/components/coach/coach-panel';
 import { CoachProvider } from '@/components/coach/coach-provider';
 import { DashboardTabBar } from '@/components/layout/dashboard-tab-bar';
+import { SessionProvider } from '@/components/providers/session-provider';
+import { getSession } from '@/lib/server/get-session';
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
-}: Readonly<{ children: ReactNode }>): ReactNode {
+}: Readonly<{ children: ReactNode }>): Promise<ReactNode> {
+  const session = await getSession();
+
   return (
     <CoachProvider>
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
@@ -24,7 +28,13 @@ export default function DashboardLayout({
           </Link>
         </header>
         <DashboardTabBar />
-        {children}
+        {session ? (
+          <SessionProvider athleteId={session.athleteId} stravaAthleteId={session.stravaAthleteId}>
+            {children}
+          </SessionProvider>
+        ) : (
+          children
+        )}
       </div>
       <CoachOrb />
       <CoachPanel />

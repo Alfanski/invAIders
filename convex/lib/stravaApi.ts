@@ -140,6 +140,14 @@ export async function stravaGet<T>(accessToken: string, path: string): Promise<T
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
+  const limitHeader = res.headers.get('X-RateLimit-Limit');
+  const usageHeader = res.headers.get('X-RateLimit-Usage');
+  if (limitHeader ?? usageHeader) {
+    console.log(
+      `Strava rate limit: usage=${usageHeader ?? '?'} limit=${limitHeader ?? '?'} status=${String(res.status)}`,
+    );
+  }
+
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get('Retry-After') ?? '60', 10);
     throw new StravaRateLimitError(path, retryAfter);
