@@ -199,7 +199,7 @@ export function WorkoutView({
       <section className="glass-panel-elevated p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-white">{title}</h2>
+            <h2 className="text-xl font-semibold text-glass-text">{title}</h2>
             <p className="mt-0.5 text-sm text-glass-text-muted">{dateLabel}</p>
           </div>
           <div className="flex gap-5">
@@ -368,7 +368,9 @@ function HeroStat({ label, value }: HeroStatProps): ReactNode {
       <p className="text-[10px] font-medium uppercase tracking-widest text-glass-text-dim">
         {label}
       </p>
-      <p className="mt-0.5 text-lg font-bold tabular-nums tracking-tight text-white">{value}</p>
+      <p className="mt-0.5 text-lg font-bold tabular-nums tracking-tight text-glass-text">
+        {value}
+      </p>
     </div>
   );
 }

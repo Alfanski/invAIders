@@ -1,11 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
-import type { ActivityBucket } from '@/lib/sport-config';
-import { getSportConfig } from '@/lib/sport-config';
 import { formatDuration } from '@/lib/units';
 import type { WeekData, WeekTotals } from '@/types/dashboard';
 
@@ -16,27 +14,8 @@ interface WeekViewProps {
   week: WeekData;
 }
 
-function computeDominantBucket(
-  days: readonly { activityBucket?: ActivityBucket | undefined; hasActivity: boolean }[],
-): ActivityBucket | undefined {
-  const counts = new Map<ActivityBucket, number>();
-  for (const d of days) {
-    if (d.hasActivity && d.activityBucket) {
-      counts.set(d.activityBucket, (counts.get(d.activityBucket) ?? 0) + 1);
-    }
-  }
-  if (counts.size === 0) return undefined;
-  if (counts.size === 1) return counts.keys().next().value;
-  const total = [...counts.values()].reduce((a, b) => a + b, 0);
-  for (const [bucket, count] of counts) {
-    if (count / total >= 0.8) return bucket;
-  }
-  return undefined;
-}
-
 export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const dominantBucket = useMemo(() => computeDominantBucket(week.days), [week.days]);
 
   const handleSelect = useCallback((index: number) => {
     setSelectedDay((prev) => (prev === index ? null : index));
@@ -50,7 +29,7 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
         ? '#6366f1'
         : d.hasActivity
           ? 'rgba(99, 102, 241, 0.35)'
-          : 'rgba(255, 255, 255, 0.05)',
+          : 'var(--chart-bar-empty)',
   }));
 
   return (
@@ -59,7 +38,7 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
       <section className="glass-panel-elevated p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-white">{week.weekLabel}</h2>
+            <h2 className="text-xl font-semibold text-glass-text">{week.weekLabel}</h2>
             <p className="mt-0.5 text-sm text-glass-text-muted">{week.dateRange}</p>
           </div>
           <div className="flex gap-5">
@@ -75,13 +54,7 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
       </section>
 
       {/* Week-over-week comparison */}
-      {week.prevTotals && (
-        <WeekComparison
-          current={week.totals}
-          previous={week.prevTotals}
-          dominantBucket={dominantBucket}
-        />
-      )}
+      {week.prevTotals && <WeekComparison current={week.totals} previous={week.prevTotals} />}
 
       {/* AI weekly summary */}
       <section className="glass-panel border-accent/20 p-5">
@@ -120,14 +93,14 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
             <BarChart data={barData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <XAxis
                 dataKey="name"
-                stroke="rgba(255,255,255,0.15)"
-                tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }}
+                stroke="var(--chart-grid)"
+                tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
-                stroke="rgba(255,255,255,0.15)"
-                tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }}
+                stroke="var(--chart-grid)"
+                tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v: number) => `${String(v)} km`}
@@ -184,7 +157,9 @@ function WeekHeroStat({ label, value }: WeekHeroStatProps): ReactNode {
       <p className="text-[10px] font-medium uppercase tracking-widest text-glass-text-dim">
         {label}
       </p>
-      <p className="mt-0.5 text-lg font-bold tabular-nums tracking-tight text-white">{value}</p>
+      <p className="mt-0.5 text-lg font-bold tabular-nums tracking-tight text-glass-text">
+        {value}
+      </p>
     </div>
   );
 }
@@ -206,15 +181,7 @@ function pctChange(curr: number, prev: number): number {
   return ((curr - prev) / prev) * 100;
 }
 
-function WeekComparison({
-  current,
-  previous,
-  dominantBucket,
-}: WeekComparisonProps & { dominantBucket?: ActivityBucket | undefined }): ReactNode {
-  const sportCfg = getSportConfig(dominantBucket ?? 'run');
-  const avgPaceCurr = current.distanceKm > 0 ? current.durationSec / current.distanceKm : 0;
-  const avgPacePrev = previous.distanceKm > 0 ? previous.durationSec / previous.distanceKm : 0;
-
+function WeekComparison({ current, previous }: WeekComparisonProps): ReactNode {
   const metrics: ComparisonMetric[] = [
     {
       label: 'Distance',
@@ -229,13 +196,9 @@ function WeekComparison({
       higherIsBetter: true,
     },
     {
-      label: dominantBucket ? sportCfg.speedLabel : 'Avg Pace',
-      current: dominantBucket
-        ? sportCfg.formatSpeed(avgPaceCurr)
-        : avgPaceCurr > 0
-          ? `${String(Math.floor(avgPaceCurr / 60))}:${String(Math.round(avgPaceCurr % 60)).padStart(2, '0')} /km`
-          : '--',
-      pctChange: avgPacePrev > 0 ? pctChange(avgPacePrev, avgPaceCurr) : 0,
+      label: 'Calories',
+      current: `${String(Math.round(current.calories))} kcal`,
+      pctChange: pctChange(current.calories, previous.calories),
       higherIsBetter: true,
     },
     {
@@ -288,7 +251,7 @@ function ComparisonCard({ metric }: { metric: ComparisonMetric }): ReactNode {
       <span className="text-[10px] font-medium uppercase tracking-wider text-glass-text-dim">
         {label}
       </span>
-      <span className="text-sm font-semibold tabular-nums text-white">{current}</span>
+      <span className="text-sm font-semibold tabular-nums text-glass-text">{current}</span>
       {!isNeutral && (
         <span className={`text-[10px] font-medium tabular-nums ${color}`}>
           {arrow} {Math.abs(pct).toFixed(0)}%

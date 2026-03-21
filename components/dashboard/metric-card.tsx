@@ -79,7 +79,7 @@ function CardContent({
           </svg>
         )}
       </div>
-      <p className="mt-1 text-lg font-semibold tracking-tight text-white">
+      <p className="mt-1 text-lg font-semibold tracking-tight text-glass-text">
         {color ? <span style={{ color }}>{value}</span> : value}
       </p>
     </>

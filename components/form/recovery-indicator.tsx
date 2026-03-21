@@ -21,7 +21,7 @@ export function RecoveryIndicator({ recovery }: Readonly<RecoveryIndicatorProps>
 
       <div className="flex items-center gap-4">
         <div className="flex flex-col items-center">
-          <span className="text-2xl font-bold text-white">{String(pct)}%</span>
+          <span className="text-2xl font-bold text-glass-text">{String(pct)}%</span>
           <span className="text-[10px] uppercase tracking-widest text-glass-text-dim">
             Recovered
           </span>

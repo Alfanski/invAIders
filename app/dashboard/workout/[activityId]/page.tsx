@@ -130,7 +130,7 @@ function WorkoutContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode
     <div className="space-y-4">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-glass-text-muted transition hover:text-white"
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-glass-text-muted transition hover:text-glass-text"
       >
         <svg
           className="h-3.5 w-3.5"

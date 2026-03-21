@@ -92,7 +92,7 @@ export function FormGauge({ tsb, ctl, atl, zone, trend7d }: Readonly<FormGaugePr
       {/* TSB value + zone */}
       <div className="text-center">
         <div className="flex items-baseline justify-center gap-2">
-          <span className="text-3xl font-bold text-white">{tsb.toFixed(1)}</span>
+          <span className="text-3xl font-bold text-glass-text">{tsb.toFixed(1)}</span>
           <span className="text-[10px] font-medium uppercase tracking-widest text-glass-text-dim">
             TSB
           </span>
@@ -108,7 +108,10 @@ export function FormGauge({ tsb, ctl, atl, zone, trend7d }: Readonly<FormGaugePr
       <div className="mt-5">
         <div className="relative">
           {/* Track background */}
-          <div className="absolute inset-0 rounded-full bg-white/[0.03]" style={{ height: 14 }} />
+          <div
+            className="absolute inset-0 rounded-full bg-black/[0.03] dark:bg-white/[0.03]"
+            style={{ height: 14 }}
+          />
 
           {/* Zone segments */}
           <div className="relative flex h-3.5 overflow-hidden rounded-full">
@@ -153,7 +156,7 @@ export function FormGauge({ tsb, ctl, atl, zone, trend7d }: Readonly<FormGaugePr
               <span
                 key={b.zone}
                 className={`text-center text-[9px] uppercase tracking-wider ${
-                  b.zone === zone ? 'font-semibold text-white/70' : 'text-white/25'
+                  b.zone === zone ? 'font-semibold text-glass-text-muted' : 'text-glass-text-dim'
                 }`}
                 style={{ width: `${String(widthPct)}%` }}
               >

@@ -45,9 +45,12 @@ function ChartTooltip({ active, payload, unit, formatValue }: CustomTooltipProps
   const valueLabel = formatValue ? formatValue(point.value) : defaultFormatValue(point.value, unit);
 
   return (
-    <div className="rounded-lg border border-glass-border bg-[#1a1830] px-3 py-2 text-xs shadow-xl">
+    <div
+      className="rounded-lg border border-glass-border px-3 py-2 text-xs shadow-xl"
+      style={{ backgroundColor: 'var(--surface-tooltip)' }}
+    >
       <p className="text-glass-text-muted">{timeLabel}</p>
-      <p className="mt-0.5 font-semibold text-white">{valueLabel}</p>
+      <p className="mt-0.5 font-semibold text-glass-text">{valueLabel}</p>
     </div>
   );
 }
@@ -69,16 +72,19 @@ export function MetricChart({
   return (
     <div className="glass-panel p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-white">{label} Over Time</h4>
+        <h4 className="text-sm font-semibold text-glass-text">{label} Over Time</h4>
         <div className="flex gap-4 text-xs text-glass-text-muted">
           <span>
-            Min <span className="font-medium text-white">{formatSummaryValue(summary.min)}</span>
+            Min{' '}
+            <span className="font-medium text-glass-text">{formatSummaryValue(summary.min)}</span>
           </span>
           <span>
-            Avg <span className="font-medium text-white">{formatSummaryValue(summary.avg)}</span>
+            Avg{' '}
+            <span className="font-medium text-glass-text">{formatSummaryValue(summary.avg)}</span>
           </span>
           <span>
-            Max <span className="font-medium text-white">{formatSummaryValue(summary.max)}</span>
+            Max{' '}
+            <span className="font-medium text-glass-text">{formatSummaryValue(summary.max)}</span>
           </span>
         </div>
       </div>
@@ -95,15 +101,15 @@ export function MetricChart({
             <XAxis
               dataKey="timeSec"
               tickFormatter={defaultFormatTime}
-              stroke="rgba(255,255,255,0.15)"
-              tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }}
+              stroke="var(--chart-grid)"
+              tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
               reversed={invertY}
-              stroke="rgba(255,255,255,0.15)"
-              tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }}
+              stroke="var(--chart-grid)"
+              tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v: number) =>
@@ -113,7 +119,7 @@ export function MetricChart({
             />
             <Tooltip
               content={<ChartTooltip unit={unit} formatValue={formatValue} />}
-              cursor={{ stroke: 'rgba(255,255,255,0.1)' }}
+              cursor={{ stroke: 'var(--chart-cursor)' }}
             />
             <Area
               type="monotone"
@@ -122,7 +128,7 @@ export function MetricChart({
               strokeWidth={2}
               fill={`url(#gradient-${label})`}
               dot={false}
-              activeDot={{ r: 4, fill: color, stroke: '#1a1830', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: color, stroke: 'var(--surface-tooltip)', strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

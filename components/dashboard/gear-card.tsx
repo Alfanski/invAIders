@@ -61,7 +61,7 @@ export function GearCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="truncate text-sm font-semibold text-white">{name}</h4>
+            <h4 className="truncate text-sm font-semibold text-glass-text">{name}</h4>
             <span className="shrink-0 text-xs tabular-nums text-glass-text-muted">
               {distanceKm.toFixed(0)} km
             </span>

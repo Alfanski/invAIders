@@ -35,16 +35,16 @@ export default function RouteMapLeaflet({ latlng }: Readonly<RouteMapLeafletProp
   const end = positions[positions.length - 1] ?? start;
 
   return (
-    <div className="overflow-hidden rounded-2xl">
+    <div className="route-map overflow-hidden rounded-2xl">
       <MapContainer
         center={start}
         zoom={13}
-        style={{ height: '16rem', width: '100%', background: '#0c0a1a' }}
+        style={{ height: '16rem', width: '100%', background: 'var(--surface-tooltip)' }}
         zoomControl={false}
         attributionControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap &copy; CARTO"
         />
         <Polyline

@@ -23,7 +23,7 @@ function DetailRow({ label, value, color }: DetailRowProps): ReactNode {
     <div className="flex items-center justify-between py-1.5">
       <span className="text-xs text-glass-text-muted">{label}</span>
       <span
-        className="text-sm font-semibold tabular-nums text-white"
+        className="text-sm font-semibold tabular-nums text-glass-text"
         style={color ? { color } : undefined}
       >
         {value}
@@ -65,7 +65,7 @@ export function DayDetail({ day }: Readonly<DayDetailProps>): ReactNode {
     <div className="glass-panel p-5">
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h4 className="text-base font-semibold text-white">{day.activityName}</h4>
+          <h4 className="text-base font-semibold text-glass-text">{day.activityName}</h4>
           <p className="mt-0.5 text-xs text-glass-text-muted">
             {day.dayLabel}, {day.date} -- {day.activityType}
           </p>

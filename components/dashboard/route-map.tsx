@@ -57,9 +57,12 @@ function ElevProfileTooltip({ active, payload }: ElevProfileTooltipProps): React
   if (!active || !payload?.[0]) return null;
   const pt = payload[0];
   return (
-    <div className="rounded-lg border border-glass-border bg-[#1a1830] px-3 py-2 text-xs shadow-xl">
+    <div
+      className="rounded-lg border border-glass-border px-3 py-2 text-xs shadow-xl"
+      style={{ backgroundColor: 'var(--surface-tooltip)' }}
+    >
       <p className="text-glass-text-muted">{pt.payload.distance.toFixed(1)} km</p>
-      <p className="mt-0.5 font-semibold text-white">{Math.round(pt.value)} m</p>
+      <p className="mt-0.5 font-semibold text-glass-text">{Math.round(pt.value)} m</p>
     </div>
   );
 }
@@ -90,23 +93,20 @@ function ElevationProfile({ altitude, distance }: ElevationProfileProps): ReactN
             </defs>
             <XAxis
               dataKey="distance"
-              stroke="rgba(255,255,255,0.15)"
-              tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }}
+              stroke="var(--chart-grid)"
+              tick={{ fill: 'var(--chart-tick)', fontSize: 10 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v: number) => `${v.toFixed(0)} km`}
             />
             <YAxis
-              stroke="rgba(255,255,255,0.15)"
-              tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }}
+              stroke="var(--chart-grid)"
+              tick={{ fill: 'var(--chart-tick)', fontSize: 10 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v: number) => `${String(Math.round(v))}m`}
             />
-            <Tooltip
-              content={<ElevProfileTooltip />}
-              cursor={{ stroke: 'rgba(255,255,255,0.1)' }}
-            />
+            <Tooltip content={<ElevProfileTooltip />} cursor={{ stroke: 'var(--chart-cursor)' }} />
             <Area
               type="monotone"
               dataKey="altitude"

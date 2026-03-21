@@ -41,7 +41,7 @@ function CustomTooltip({
   if (!active || !payload?.length || !label) return null;
   return (
     <div className="glass-card border border-glass-border p-2.5 text-xs">
-      <p className="mb-1.5 font-medium text-white">{formatDate(label)}</p>
+      <p className="mb-1.5 font-medium text-glass-text">{formatDate(label)}</p>
       {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }}>
           {entry.name}: {entry.value.toFixed(1)}
@@ -64,18 +64,18 @@ export function FitnessChart({ series }: Readonly<FitnessChartProps>): ReactNode
           <XAxis
             dataKey="date"
             tickFormatter={formatDate}
-            tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }}
+            tick={{ fill: 'var(--chart-tick)', fontSize: 10 }}
             axisLine={false}
             tickLine={false}
             interval={tickInterval}
           />
           <YAxis
-            tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }}
+            tick={{ fill: 'var(--chart-tick)', fontSize: 10 }}
             axisLine={false}
             tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 4" />
+          <ReferenceLine y={0} stroke="var(--chart-cursor)" strokeDasharray="4 4" />
 
           <Area
             type="monotone"

@@ -101,11 +101,7 @@ export function ActivityPicker({
                   {formatShortDate(a.startDate)}
                 </span>
               </div>
-              <span
-                className={`text-xs font-semibold ${isSelected ? 'text-white' : 'text-glass-text'}`}
-              >
-                {truncate(a.name, 18)}
-              </span>
+              <span className="text-xs font-semibold text-glass-text">{truncate(a.name, 18)}</span>
               <span className="tabular-nums text-[10px] text-glass-text-muted">
                 {distKm.toFixed(1)} km
               </span>

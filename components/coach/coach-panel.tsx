@@ -136,8 +136,8 @@ export function CoachPanel(): ReactNode {
 
   return (
     <div
-      className="coach-panel-enter fixed bottom-4 left-4 right-4 z-50 flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-[#0c0a1a]/95 shadow-2xl backdrop-blur-xl sm:left-auto sm:bottom-6 sm:right-6 sm:w-[380px]"
-      style={{ maxHeight: 'min(60vh, 520px)' }}
+      className="coach-panel-enter fixed bottom-4 left-4 right-4 z-50 flex flex-col overflow-hidden rounded-2xl border border-glass-border shadow-2xl backdrop-blur-xl sm:left-auto sm:bottom-6 sm:right-6 sm:w-[380px]"
+      style={{ backgroundColor: 'var(--coach-panel-bg)', maxHeight: 'min(60vh, 520px)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5">
@@ -158,14 +158,14 @@ export function CoachPanel(): ReactNode {
             </svg>
           </div>
           <div>
-            <p className="text-xs font-semibold text-white">AI Coach</p>
+            <p className="text-xs font-semibold text-glass-text">AI Coach</p>
             <p className="text-[9px] text-glass-text-dim">{routeContext}</p>
           </div>
         </div>
         <button
           type="button"
           onClick={close}
-          className="rounded-lg p-1 text-glass-text-muted transition-colors hover:bg-glass-hover hover:text-white"
+          className="rounded-lg p-1 text-glass-text-muted transition-colors hover:bg-glass-hover hover:text-glass-text"
           aria-label="Close"
         >
           <svg
@@ -224,7 +224,7 @@ export function CoachPanel(): ReactNode {
           </div>
         )}
         {chatError && !isProcessing && (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] text-red-500 dark:text-red-300">
             {chatError}
           </div>
         )}
@@ -236,7 +236,7 @@ export function CoachPanel(): ReactNode {
         {isListening ? (
           <div className="flex items-center gap-3">
             <div className="flex-1 rounded-xl bg-accent/5 px-3 py-2 ring-1 ring-accent/60">
-              <p className="min-h-[1.25rem] text-sm text-white/80">
+              <p className="min-h-[1.25rem] text-sm text-glass-text">
                 {interimTranscript || transcript || (
                   <span className="text-glass-text-dim">Listening...</span>
                 )}
@@ -273,13 +273,13 @@ export function CoachPanel(): ReactNode {
                 setChatInput(e.target.value);
               }}
               placeholder="Ask your coach..."
-              className="flex-1 rounded-xl bg-glass px-3 py-2 text-sm text-white placeholder-glass-text-dim outline-none ring-1 ring-glass-border transition-shadow focus:ring-accent/40"
+              className="flex-1 rounded-xl bg-glass px-3 py-2 text-sm text-glass-text placeholder-glass-text-dim outline-none ring-1 ring-glass-border transition-shadow focus:ring-accent/40"
             />
             {isSupported && (
               <button
                 type="button"
                 onClick={toggleVoice}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-glass text-glass-text-muted transition-all hover:bg-glass-hover hover:text-white"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-glass text-glass-text-muted transition-all hover:bg-glass-hover hover:text-glass-text"
                 aria-label="Voice input"
               >
                 <svg
@@ -333,7 +333,7 @@ function MessageBubble({ message }: Readonly<{ message: CoachMessage }>): ReactN
         className={`max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${
           isCoach
             ? 'border-l-2 border-accent/40 bg-glass text-glass-text'
-            : 'bg-accent/20 text-white'
+            : 'bg-accent/20 text-glass-text'
         }`}
       >
         {isCoach && (

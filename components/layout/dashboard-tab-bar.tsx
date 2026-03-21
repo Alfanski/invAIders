@@ -23,8 +23,8 @@ export function DashboardTabBar(): ReactNode {
             href={item.href}
             className={`rounded-xl px-3 py-2.5 text-center text-sm font-medium transition-all ${
               isActive
-                ? 'bg-accent/20 text-white shadow-sm'
-                : 'text-glass-text-muted hover:text-white hover:bg-glass-hover'
+                ? 'bg-accent/20 text-glass-text shadow-sm'
+                : 'text-glass-text-muted hover:text-glass-text hover:bg-glass-hover'
             }`}
           >
             {item.label}

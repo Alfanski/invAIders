@@ -45,7 +45,7 @@ export function SplitTable({
       if (diff > 0.02) return '#34d399';
       if (diff < -0.02) return '#f87171';
     }
-    return 'rgba(255,255,255,0.9)';
+    return 'var(--glass-text-val)';
   }
 
   return (

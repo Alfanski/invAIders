@@ -100,7 +100,7 @@ export function ZoneDistribution({
             <span className="ml-auto tabular-nums text-glass-text-muted">
               {formatZoneTime(z.timeSec)}
             </span>
-            <span className="w-10 text-right tabular-nums font-medium text-white">
+            <span className="w-10 text-right tabular-nums font-medium text-glass-text">
               {z.pct.toFixed(0)}%
             </span>
           </div>

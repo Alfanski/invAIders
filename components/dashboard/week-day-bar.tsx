@@ -30,16 +30,20 @@ export function WeekDayBar({
             }}
             className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-center transition-all ${
               isSelected
-                ? 'bg-accent/20 text-white shadow-sm'
+                ? 'bg-accent/20 text-glass-text shadow-sm'
                 : hasActivity
-                  ? 'text-glass-text hover:bg-glass-hover hover:text-white'
+                  ? 'text-glass-text hover:bg-glass-hover'
                   : 'text-glass-text-dim hover:bg-glass-hover/50'
             }`}
           >
             <span className="text-[10px] font-medium uppercase tracking-wider">{day.dayShort}</span>
             <span
               className={`text-sm font-semibold tabular-nums ${
-                isSelected ? 'text-white' : hasActivity ? 'text-glass-text' : 'text-glass-text-dim'
+                isSelected
+                  ? 'text-glass-text'
+                  : hasActivity
+                    ? 'text-glass-text'
+                    : 'text-glass-text-dim'
               }`}
             >
               {day.date.split(' ')[1]}

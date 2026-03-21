@@ -1,17 +1,85 @@
 @import 'tailwindcss';
 
+@variant dark (&:where(.dark, .dark *));
+
+/* ──────────────── Light mode (default) ──────────────── */
+:root {
+  --surface-body: linear-gradient(145deg, #f0f2f5 0%, #e8eaf0 30%, #edf0f7 60%, #f5f6fa 100%);
+  --surface-deep: #f8f9fb;
+  --surface-tooltip: #ffffff;
+  --coach-panel-bg: rgba(248, 249, 251, 0.95);
+
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border-val: rgba(0, 0, 0, 0.08);
+  --glass-hover-val: rgba(255, 255, 255, 0.85);
+  --glass-active-val: rgba(255, 255, 255, 0.92);
+  --glass-text-val: rgba(15, 23, 42, 0.9);
+  --glass-text-muted-val: rgba(15, 23, 42, 0.55);
+  --glass-text-dim-val: rgba(15, 23, 42, 0.35);
+
+  --accent-glow-val: rgba(99, 102, 241, 0.2);
+  --accent-surface-val: rgba(99, 102, 241, 0.06);
+
+  --panel-elevated-bg: rgba(255, 255, 255, 0.8);
+  --panel-elevated-border: rgba(0, 0, 0, 0.06);
+  --panel-elevated-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  --chart-grid: rgba(0, 0, 0, 0.08);
+  --chart-tick: rgba(0, 0, 0, 0.45);
+  --chart-cursor: rgba(0, 0, 0, 0.05);
+  --chart-bar-empty: rgba(0, 0, 0, 0.04);
+
+  --mesh-opacity: 0.08;
+  --map-tile-filter: none;
+
+  color-scheme: light;
+}
+
+/* ──────────────── Dark mode ──────────────── */
+.dark {
+  --surface-body: linear-gradient(145deg, #0c0a1a 0%, #12102b 30%, #0e1628 60%, #0a0e1a 100%);
+  --surface-deep: #0c0a1a;
+  --surface-tooltip: #1a1830;
+  --coach-panel-bg: rgba(12, 10, 26, 0.95);
+
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border-val: rgba(255, 255, 255, 0.1);
+  --glass-hover-val: rgba(255, 255, 255, 0.1);
+  --glass-active-val: rgba(255, 255, 255, 0.14);
+  --glass-text-val: rgba(255, 255, 255, 0.9);
+  --glass-text-muted-val: rgba(255, 255, 255, 0.5);
+  --glass-text-dim-val: rgba(255, 255, 255, 0.35);
+
+  --accent-glow-val: rgba(99, 102, 241, 0.35);
+  --accent-surface-val: rgba(99, 102, 241, 0.12);
+
+  --panel-elevated-bg: rgba(255, 255, 255, 0.08);
+  --panel-elevated-border: rgba(255, 255, 255, 0.12);
+  --panel-elevated-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --chart-grid: rgba(255, 255, 255, 0.15);
+  --chart-tick: rgba(255, 255, 255, 0.35);
+  --chart-cursor: rgba(255, 255, 255, 0.1);
+  --chart-bar-empty: rgba(255, 255, 255, 0.05);
+
+  --mesh-opacity: 0.25;
+  --map-tile-filter: brightness(1.6) saturate(0.9);
+
+  color-scheme: dark;
+}
+
 @theme {
-  --color-glass: rgba(255, 255, 255, 0.06);
-  --color-glass-border: rgba(255, 255, 255, 0.1);
-  --color-glass-hover: rgba(255, 255, 255, 0.1);
-  --color-glass-active: rgba(255, 255, 255, 0.14);
-  --color-glass-text: rgba(255, 255, 255, 0.9);
-  --color-glass-text-muted: rgba(255, 255, 255, 0.5);
-  --color-glass-text-dim: rgba(255, 255, 255, 0.35);
+  --color-glass: var(--glass-bg);
+  --color-glass-border: var(--glass-border-val);
+  --color-glass-hover: var(--glass-hover-val);
+  --color-glass-active: var(--glass-active-val);
+  --color-glass-text: var(--glass-text-val);
+  --color-glass-text-muted: var(--glass-text-muted-val);
+  --color-glass-text-dim: var(--glass-text-dim-val);
 
   --color-accent: #6366f1;
-  --color-accent-glow: rgba(99, 102, 241, 0.35);
-  --color-accent-surface: rgba(99, 102, 241, 0.12);
+  --color-accent-glow: var(--accent-glow-val);
+  --color-accent-surface: var(--accent-surface-val);
 
   --color-zone-z1: #94a3b8;
   --color-zone-z2: #60a5fa;
@@ -24,13 +92,9 @@
   --color-coach-tsb: #22c55e;
 }
 
-:root {
-  color-scheme: dark;
-}
-
 body {
   min-height: 100vh;
-  background: linear-gradient(145deg, #0c0a1a 0%, #12102b 30%, #0e1628 60%, #0a0e1a 100%);
+  background: var(--surface-body);
   color: var(--color-glass-text);
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
@@ -44,14 +108,12 @@ body {
 }
 
 .glass-panel-elevated {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--panel-elevated-bg);
+  border: 1px solid var(--panel-elevated-border);
   border-radius: 1rem;
   backdrop-filter: blur(24px) saturate(1.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: var(--panel-elevated-shadow);
 }
 
 .glass-card {
@@ -67,7 +129,7 @@ body {
 
 .glass-card:hover {
   background: var(--color-glass-hover);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--color-glass-hover);
 }
 
 .glow-accent {
@@ -90,7 +152,7 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.25;
+  opacity: var(--mesh-opacity);
 }
 
 .bg-mesh::before {
@@ -186,6 +248,11 @@ body {
     opacity: 1;
     transform: scale(1.2);
   }
+}
+
+/* Leaflet map tiles — adapt filter to theme */
+.route-map .leaflet-tile-pane {
+  filter: var(--map-tile-filter);
 }
 
 /* Hide scrollbar for suggestions */

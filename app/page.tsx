@@ -29,7 +29,7 @@ export default async function LoginPage({
         </p>
 
         {errorMessage && (
-          <div className="mt-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="mt-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500 dark:text-red-300">
             {errorMessage}
           </div>
         )}

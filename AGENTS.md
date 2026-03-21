@@ -188,9 +188,12 @@ npm run test:coverage # with 80% threshold enforcement
 
 ## Key Patterns
 
-- UI follows dark glassmorphism design system (`.cursor/rules/ui-design-system.mdc`)
+- UI follows glassmorphism design system (`.cursor/rules/ui-design-system.mdc`)
+- Dark/light theme via `next-themes` (class strategy, default dark, system-aware)
 - Three glass surface tiers: `glass-panel`, `glass-panel-elevated`, `glass-card`
 - All custom colors defined as `@theme` tokens in `app/globals.css` (Tailwind v4)
+- Theme-sensitive CSS vars in `:root` (light) / `.dark` (dark), `@theme` refs them
+- `@variant dark` enables `dark:` prefix for one-off overrides
 - No icon library -- inline SVG only (Heroicons-style paths)
 - No shadcn/ui -- custom components using glass panel system
 - Strava tokens stored server-side only (Convex restricted table)
@@ -206,7 +209,8 @@ npm run test:coverage # with 80% threshold enforcement
 - Never send raw streams to Gemini (token waste, no quality improvement)
 - Don't call it "Body Battery" (Garmin trademark) -- use "Coach Status"
 - Don't rely on `suffer_score` alone (premium-only) -- compute TRIMP as fallback
-- Don't use light-theme classes (`bg-white`, `text-slate-*`) -- always dark
+- Don't use `text-white` for primary text -- use `text-glass-text` (theme-aware)
+- Don't hardcode dark surface colors (`#0c0a1a`, `#1a1830`) -- use CSS vars
 - Don't install shadcn/ui or icon packages -- use existing glass + inline SVG patterns
 
 ## Strava API

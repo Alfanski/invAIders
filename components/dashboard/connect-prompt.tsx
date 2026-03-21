@@ -7,7 +7,7 @@ export function ConnectPrompt(): ReactNode {
   return (
     <main className="flex flex-col items-center justify-center gap-6 py-16">
       <div className="glass-panel-elevated px-10 py-12 text-center">
-        <h2 className="text-xl font-semibold text-white">Connect Strava</h2>
+        <h2 className="text-xl font-semibold text-glass-text">Connect Strava</h2>
         <p className="mt-3 max-w-sm text-sm text-glass-text-muted">
           Link your Strava account to see your real workouts, training load, and AI coaching
           insights.

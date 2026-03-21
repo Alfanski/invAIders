@@ -10,38 +10,63 @@ any component, page, or style.
 
 ## Visual Identity
 
-Dark-only glassmorphism aesthetic. No light mode, no theme toggle.
-Root HTML element has `className="dark"`, body uses `color-scheme: dark`.
+Glassmorphism aesthetic with dark/light theme support via `next-themes`.
+Root HTML element uses `suppressHydrationWarning`, class toggled by `next-themes`.
+Default theme is `dark`; users can toggle via `ThemeToggle` component in dashboard header.
 
 ### Background
 
-Full-viewport gradient on `body`:
-
-```
-linear-gradient(145deg, #0c0a1a 0%, #12102b 30%, #0e1628 60%, #0a0e1a 100%)
-```
+Full-viewport gradient on `body` via `var(--surface-body)`:
+- **Dark**: `linear-gradient(145deg, #0c0a1a 0%, #12102b 30%, #0e1628 60%, #0a0e1a 100%)`
+- **Light**: `linear-gradient(145deg, #f0f2f5 0%, #e8eaf0 30%, #edf0f7 60%, #f5f6fa 100%)`
 
 Atmospheric mesh layer (`bg-mesh` div in root layout) adds two blurred radial
-gradient orbs: indigo (`#6366f1`) top-right, green (`#22c55e`) bottom-left, both
-at 25% opacity with 120px blur.
+gradient orbs: indigo (`#6366f1`) top-right, green (`#22c55e`) bottom-left.
+Opacity adapts via `var(--mesh-opacity)`: 25% dark, 8% light.
+
+### Theme Architecture
+
+All theme-sensitive values are CSS custom properties in `:root` (light) and
+`.dark` (dark). `@theme` tokens reference these variables so Tailwind utilities
+like `bg-glass`, `text-glass-text` automatically adapt to the active theme.
+
+Key CSS variables (defined in `globals.css`):
+- `--surface-body`, `--surface-deep`, `--surface-tooltip`, `--coach-panel-bg`
+- `--glass-bg`, `--glass-border-val`, `--glass-hover-val`, `--glass-active-val`
+- `--glass-text-val`, `--glass-text-muted-val`, `--glass-text-dim-val`
+- `--chart-grid`, `--chart-tick`, `--chart-cursor`, `--chart-bar-empty`
+- `--mesh-opacity`, `--map-tile-filter`
+
+The `@variant dark` directive enables the `dark:` prefix for one-off overrides
+(e.g. `text-red-500 dark:text-red-300`).
+
+### Theme Toggle
+
+`ThemeToggle` component in `components/layout/theme-toggle.tsx`. Uses `next-themes`
+`useTheme()` hook. Placed in the dashboard header. Renders a sun icon (dark mode
+active → click to switch to light) or moon icon (light mode active → click to
+switch to dark). Skeleton placeholder until mounted to prevent hydration mismatch.
 
 ## Color Tokens
 
-All custom colors live in `app/globals.css` inside `@theme { }` (Tailwind v4).
+All custom colors live in `app/globals.css` inside `@theme { }` (Tailwind v4),
+backed by CSS custom properties in `:root` (light) and `.dark` (dark) blocks.
 Use these tokens via Tailwind utilities (e.g. `bg-glass`, `text-accent`).
 Never introduce new hard-coded colors without adding them to `@theme` first.
+For theme-sensitive values not in `@theme`, use `var(--variable-name)` inline
+or the `dark:` variant for one-off overrides.
 
 ### Glass surface palette
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `glass` | `rgba(255,255,255, 0.06)` | Default panel/card bg |
-| `glass-border` | `rgba(255,255,255, 0.1)` | Panel/card border |
-| `glass-hover` | `rgba(255,255,255, 0.1)` | Hover state bg |
-| `glass-active` | `rgba(255,255,255, 0.14)` | Active/pressed state bg |
-| `glass-text` | `rgba(255,255,255, 0.9)` | Primary text |
-| `glass-text-muted` | `rgba(255,255,255, 0.5)` | Secondary text, inactive tabs |
-| `glass-text-dim` | `rgba(255,255,255, 0.35)` | Tertiary text, micro labels |
+| Token | Dark | Light | Usage |
+|-------|------|-------|-------|
+| `glass` | `rgba(255,255,255, 0.06)` | `rgba(255,255,255, 0.65)` | Default panel/card bg |
+| `glass-border` | `rgba(255,255,255, 0.1)` | `rgba(0,0,0, 0.08)` | Panel/card border |
+| `glass-hover` | `rgba(255,255,255, 0.1)` | `rgba(255,255,255, 0.85)` | Hover state bg |
+| `glass-active` | `rgba(255,255,255, 0.14)` | `rgba(255,255,255, 0.92)` | Active/pressed state bg |
+| `glass-text` | `rgba(255,255,255, 0.9)` | `rgba(15,23,42, 0.9)` | Primary text |
+| `glass-text-muted` | `rgba(255,255,255, 0.5)` | `rgba(15,23,42, 0.55)` | Secondary text, tabs |
+| `glass-text-dim` | `rgba(255,255,255, 0.35)` | `rgba(15,23,42, 0.35)` | Tertiary text, labels |
 
 ### Accent
 
@@ -117,7 +142,7 @@ OpenType features: `'cv02', 'cv03', 'cv04', 'cv11'` on body.
 | Section title | `text-2xl font-bold tracking-tight` or `text-xl font-semibold` |
 | Section label | `text-[11px] font-medium uppercase tracking-widest text-glass-text-dim` |
 | Body text | `text-sm text-glass-text` or `text-glass-text-muted` |
-| Stat value | `text-lg font-semibold tracking-tight text-white` |
+| Stat value | `text-lg font-semibold tracking-tight text-glass-text` |
 | Micro label | `text-[10px]` or `text-[9px]` |
 | Chat bubble | `text-[13px] leading-relaxed` |
 
@@ -184,10 +209,10 @@ Tab bar: `glass-panel grid grid-cols-3 gap-1 p-1` containing `Link` elements.
 ### General rules
 
 - Wrap in `glass-panel p-4` with `ResponsiveContainer` inside
-- Axes: `stroke="rgba(255,255,255,0.15)"`, tick fill `rgba(255,255,255,0.35)`, `fontSize: 11`
+- Axes: `stroke="var(--chart-grid)"`, tick fill `var(--chart-tick)`, `fontSize: 11`
 - No tick lines, no axis lines
-- Tooltips: `rounded-lg border border-glass-border bg-[#1a1830] px-3 py-2 text-xs shadow-xl`
-- Dot: `dot={false}` on lines/areas; use `activeDot` with `stroke="#1a1830"`
+- Tooltips: `rounded-lg border border-glass-border px-3 py-2 text-xs shadow-xl` with `style={{ backgroundColor: 'var(--surface-tooltip)' }}`
+- Dot: `dot={false}` on lines/areas; use `activeDot` with `stroke: 'var(--surface-tooltip)'`
 
 ### Area charts (streams)
 
@@ -249,7 +274,7 @@ Inline SVG (Heroicons-style paths). No icon library import.
 Floating panel, fixed positioned:
 - Mobile: `bottom-4 left-4 right-4`
 - Desktop: `sm:left-auto sm:bottom-6 sm:right-6 sm:w-[380px]`
-- Shell: `rounded-2xl border border-glass-border bg-[#0c0a1a]/95 shadow-2xl backdrop-blur-xl`
+- Shell: `rounded-2xl border border-glass-border shadow-2xl backdrop-blur-xl` with `style={{ backgroundColor: 'var(--coach-panel-bg)' }}`
 - Max height: `min(60vh, 520px)`
 - Sections divided by `border-t border-glass-border/50`
 
@@ -283,8 +308,9 @@ Floating panel, fixed positioned:
 
 ## Anti-Patterns (DO NOT)
 
-- Do NOT add a light mode or theme toggle
-- Do NOT use `bg-white`, `text-slate-*`, `border-slate-*` or any light-theme classes
+- Do NOT use `text-white` for primary text -- use `text-glass-text` (adapts to theme)
+- Do NOT hardcode `bg-[#0c0a1a]`, `bg-[#1a1830]` -- use CSS variables (`--surface-deep`, `--surface-tooltip`)
+- Do NOT hardcode `rgba(255,255,255,...)` for chart axes/ticks -- use `var(--chart-grid)`, `var(--chart-tick)`, `var(--chart-cursor)`
 - Do NOT import an icon library (lucide, heroicons package) -- use inline SVG
 - Do NOT install shadcn/ui -- use the glass panel system
 - Do NOT create new panel/card CSS classes -- use the three existing tiers
