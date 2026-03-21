@@ -29,6 +29,7 @@ AI fitness coach powered by Strava. Analyzes workouts, generates dashboards, del
 | -------------------------------------------------------- | ---------------------------------------- | ------ |
 | [DD-001](design/DD-001-application-architecture-plan.md) | Application architecture & contract prep | Draft  |
 | [DD-002](design/DD-002-frontend-contract-plan.md)        | Frontend contract plan (views A/B/C)     | Draft  |
+| [DD-003](design/DD-003-gemini-workout-agent.md)          | LangChain Gemini workout agent           | Draft  |
 
 _Add further design docs as `docs/design/DD-NNN-title.md`._
 
