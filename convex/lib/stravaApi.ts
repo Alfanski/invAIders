@@ -74,6 +74,7 @@ export interface StravaStreamSet {
 }
 
 export interface StravaStream<T> {
+  type: string;
   data: T[];
   series_type: string;
   original_size: number;
@@ -197,7 +198,7 @@ export async function fetchActivityStreams(
 
   const result: StravaStreamSet = {};
   for (const stream of raw) {
-    const key = stream.series_type as keyof StravaStreamSet;
+    const key = stream.type as keyof StravaStreamSet;
     (result as Record<string, unknown>)[key] = stream;
   }
   return result;

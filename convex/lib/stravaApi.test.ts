@@ -209,8 +209,20 @@ describe('fetchActivityDetail', () => {
 describe('fetchActivityStreams', () => {
   it('calls streams endpoint and reshapes array into keyed object', async () => {
     const rawStreams = [
-      { data: [0, 30, 60], series_type: 'time', original_size: 3, resolution: 'high' },
-      { data: [150, 155, 160], series_type: 'heartrate', original_size: 3, resolution: 'high' },
+      {
+        type: 'time',
+        data: [0, 30, 60],
+        series_type: 'time',
+        original_size: 3,
+        resolution: 'high',
+      },
+      {
+        type: 'heartrate',
+        data: [150, 155, 160],
+        series_type: 'heartrate',
+        original_size: 3,
+        resolution: 'high',
+      },
     ];
     mockFetchOk(rawStreams);
 

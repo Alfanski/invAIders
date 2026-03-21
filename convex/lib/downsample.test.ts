@@ -8,13 +8,8 @@ import { downsampleStreams } from './downsample';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeStream<T>(data: T[]): {
-  data: T[];
-  series_type: string;
-  original_size: number;
-  resolution: string;
-} {
-  return { data, series_type: '', original_size: data.length, resolution: 'high' };
+function makeStream<T>(data: T[]): StravaStream<T> {
+  return { type: '', data, series_type: '', original_size: data.length, resolution: 'high' };
 }
 
 function timeStream(seconds: number[]): StravaStream<number> {
