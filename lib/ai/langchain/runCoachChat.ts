@@ -80,7 +80,15 @@ async function prefetchAthleteContext(athleteId: string): Promise<string> {
 export async function runCoachChat(
   input: ChatInput,
 ): Promise<{ ok: true; data: ChatResult } | { ok: false; error: string }> {
-  const model = createGeminiModel();
+  let model: ReturnType<typeof createGeminiModel>;
+  try {
+    model = createGeminiModel();
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 
   let athleteContext = '';
   if (input.context.athleteId) {
