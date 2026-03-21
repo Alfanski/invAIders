@@ -67,7 +67,10 @@ function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
     if (!lastActivity) return null;
 
     const hoursSince = (Date.now() - new Date(lastActivity.startDate).getTime()) / (1000 * 60 * 60);
-    const lastTrimp = lastActivity.trimp ?? lastActivity.sufferScore ?? 0;
+    const lastTrimp =
+      lastActivity.trimp ??
+      lastActivity.sufferScore ??
+      Math.round((lastActivity.movingTimeSec / 60) * 1.2);
 
     return { hoursSince, lastTrimp };
   }, [activities]);
