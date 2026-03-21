@@ -39,8 +39,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const tokenResponse = await exchangeCode(code);
     const { athlete } = tokenResponse;
+    console.log(
+      '[strava-callback] exchangeCode ok, athleteId:',
+      athlete.id,
+      'token starts with:',
+      tokenResponse.access_token.slice(0, 8),
+    );
 
     const convex = getConvexClient();
+    console.log('[strava-callback] calling completeOAuth...');
     const result = (await convex.action(api.strava.completeOAuth, {
       stravaAthleteId: String(athlete.id),
       measurementPreference: athlete.measurement_preference,
@@ -55,6 +62,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ...(athlete.sex != null ? { sex: athlete.sex } : {}),
       ...(athlete.weight != null ? { weightKg: athlete.weight } : {}),
     })) as { athleteId: string };
+    console.log('[strava-callback] completeOAuth returned athleteId:', result.athleteId);
 
     const sessionToken = createSessionToken(result.athleteId, String(athlete.id));
     const opts = sessionCookieOptions();

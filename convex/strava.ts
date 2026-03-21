@@ -22,6 +22,8 @@ export const completeOAuth = action({
   handler: async (ctx, args) => {
     const authSubject = `strava:${args.stravaAthleteId}`;
 
+    console.log('[completeOAuth] starting for stravaAthleteId:', args.stravaAthleteId);
+
     const athleteId: Id<'athletes'> = await ctx.runMutation(internal.athletes.upsertFromStrava, {
       stravaAthleteId: args.stravaAthleteId,
       authSubject,
@@ -36,6 +38,13 @@ export const completeOAuth = action({
         : {}),
     });
 
+    console.log(
+      '[completeOAuth] athleteId:',
+      athleteId,
+      'token starts with:',
+      args.accessToken.slice(0, 8),
+    );
+
     await ctx.runMutation(internal.stravaTokens.upsertConnection, {
       athleteId,
       accessToken: args.accessToken,
@@ -44,9 +53,13 @@ export const completeOAuth = action({
       ...(args.scope !== undefined ? { scope: args.scope } : {}),
     });
 
+    console.log('[completeOAuth] token upserted successfully');
+
     const backfillStatus = await ctx.runQuery(internal.athletes.getBackfillStatus, { athleteId });
+    console.log('[completeOAuth] backfillStatus:', backfillStatus);
     if (backfillStatus !== 'complete' && backfillStatus !== 'running') {
       await ctx.scheduler.runAfter(0, internal.stravaSync.backfillHistory, { athleteId });
+      console.log('[completeOAuth] backfill scheduled');
     }
 
     return { athleteId: athleteId as string };
