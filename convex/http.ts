@@ -71,7 +71,7 @@ http.route({
       return jsonError('athleteId and stravaActivity required', 400);
     }
 
-    const a = body.stravaActivity;
+    const a = body.stravaActivity as Record<string, string | number | boolean | null | undefined>;
     const sportType = String(a['sport_type'] ?? a['type'] ?? 'Unknown');
 
     try {
@@ -82,28 +82,32 @@ http.route({
         sportType,
         activityBucket: deriveActivityBucket(sportType),
         startDate: String(a['start_date'] ?? new Date().toISOString()),
-        startDateLocal: a['start_date_local'] ? String(a['start_date_local']) : undefined,
-        timezone: a['timezone'] ? String(a['timezone']) : undefined,
         distanceMeters: Number(a['distance'] ?? 0),
         movingTimeSec: Number(a['moving_time'] ?? 0),
         elapsedTimeSec: Number(a['elapsed_time'] ?? 0),
-        totalElevationGainM:
-          a['total_elevation_gain'] != null ? Number(a['total_elevation_gain']) : undefined,
-        hasHeartrate: a['has_heartrate'] != null ? Boolean(a['has_heartrate']) : undefined,
-        averageHeartrate:
-          a['average_heartrate'] != null ? Number(a['average_heartrate']) : undefined,
-        maxHeartrate: a['max_heartrate'] != null ? Number(a['max_heartrate']) : undefined,
-        averageSpeed: a['average_speed'] != null ? Number(a['average_speed']) : undefined,
-        maxSpeed: a['max_speed'] != null ? Number(a['max_speed']) : undefined,
-        averageCadence: a['average_cadence'] != null ? Number(a['average_cadence']) : undefined,
-        averageWatts: a['average_watts'] != null ? Number(a['average_watts']) : undefined,
-        averageTempC: a['average_temp'] != null ? Number(a['average_temp']) : undefined,
-        calories: a['calories'] != null ? Number(a['calories']) : undefined,
-        sufferScore: a['suffer_score'] != null ? Number(a['suffer_score']) : undefined,
-        stravaGearId: a['gear_id'] ? String(a['gear_id']) : undefined,
-        splitsMetric: a['splits_metric'] ?? undefined,
-        laps: a['laps'] ?? undefined,
         processingStatus: 'analyzing',
+        ...(a['start_date_local'] ? { startDateLocal: String(a['start_date_local']) } : {}),
+        ...(a['timezone'] ? { timezone: String(a['timezone']) } : {}),
+        ...(a['total_elevation_gain'] != null
+          ? { totalElevationGainM: Number(a['total_elevation_gain']) }
+          : {}),
+        ...(a['has_heartrate'] != null ? { hasHeartrate: Boolean(a['has_heartrate']) } : {}),
+        ...(a['average_heartrate'] != null
+          ? { averageHeartrate: Number(a['average_heartrate']) }
+          : {}),
+        ...(a['max_heartrate'] != null ? { maxHeartrate: Number(a['max_heartrate']) } : {}),
+        ...(a['average_speed'] != null ? { averageSpeed: Number(a['average_speed']) } : {}),
+        ...(a['max_speed'] != null ? { maxSpeed: Number(a['max_speed']) } : {}),
+        ...(a['average_cadence'] != null ? { averageCadence: Number(a['average_cadence']) } : {}),
+        ...(a['average_watts'] != null ? { averageWatts: Number(a['average_watts']) } : {}),
+        ...(a['average_temp'] != null ? { averageTempC: Number(a['average_temp']) } : {}),
+        ...(a['calories'] != null ? { calories: Number(a['calories']) } : {}),
+        ...(a['suffer_score'] != null ? { sufferScore: Number(a['suffer_score']) } : {}),
+        ...(a['gear_id'] ? { stravaGearId: String(a['gear_id']) } : {}),
+        ...(body.stravaActivity['splits_metric'] != null
+          ? { splitsMetric: body.stravaActivity['splits_metric'] }
+          : {}),
+        ...(body.stravaActivity['laps'] != null ? { laps: body.stravaActivity['laps'] } : {}),
       });
       return jsonOk({ activityId });
     } catch (err) {
@@ -185,29 +189,29 @@ http.route({
       return jsonError('activityId and analysis required', 400);
     }
 
-    const anal = body.analysis;
+    const anal = body.analysis as Record<string, string | number | boolean | null | undefined>;
     const activityId = body.activityId as Id<'activities'>;
 
     try {
       const analysisId = await ctx.runMutation(internal.analyses.upsertForActivity, {
         activityId,
         model: anal['model'] ? String(anal['model']) : 'gemini-2.0-flash',
-        effortScore: anal['effortScore'] != null ? Number(anal['effortScore']) : undefined,
         executiveSummary: String(anal['executiveSummary'] ?? ''),
-        positives: Array.isArray(anal['positives'])
-          ? (anal['positives'] as string[]).map(String)
+        positives: Array.isArray(body.analysis['positives'])
+          ? (body.analysis['positives'] as string[]).map(String)
           : [],
-        improvements: Array.isArray(anal['improvements'])
-          ? (anal['improvements'] as string[]).map(String)
+        improvements: Array.isArray(body.analysis['improvements'])
+          ? (body.analysis['improvements'] as string[]).map(String)
           : [],
-        ...(anal['splitAnalysis']
+        ...(anal['effortScore'] != null ? { effortScore: Number(anal['effortScore']) } : {}),
+        ...(body.analysis['splitAnalysis']
           ? {
-              splitAnalysis: anal['splitAnalysis'] as { trend: string; comment: string },
+              splitAnalysis: body.analysis['splitAnalysis'] as { trend: string; comment: string },
             }
           : {}),
-        ...(anal['nextSession']
+        ...(body.analysis['nextSession']
           ? {
-              nextSession: anal['nextSession'] as {
+              nextSession: body.analysis['nextSession'] as {
                 type: string;
                 durationMin: number;
                 intensity: string;

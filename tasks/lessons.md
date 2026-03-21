@@ -64,3 +64,17 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 **Correction**: Agent over-complicated the setup by trying production deploys, then reverting. A simpler flow: create project via CLI, set env vars for all scopes, push to branch, let Git Integration handle deploys.
 **Root cause**: No established pattern for multi-project Vercel setups in the docs.
 **Fix applied**: Documented the pattern in AGENTS.md. Key steps: (1) `vercel link --project <name>` to create, (2) set env vars per scope (use REST API for preview), (3) set production branch in dashboard, (4) push to branch.
+
+## 2026-03-21 - Gotcha
+
+**Context**: Dashboard logout button causes session loss on tab change (bug recurred twice)
+**Correction**: Next.js `<Link>` component prefetches its target in production. When used for `/api/auth/logout`, the prefetch hits the logout route which clears the session cookie via `Set-Cookie: maicoach_session=; Max-Age=0`. This silently logs the user out, making every subsequent tab change redirect to login.
+**Root cause**: Using `<Link>` from `next/link` for API route endpoints that have side effects (logout deletes the cookie). Only manifests in production because dev mode does not aggressively prefetch.
+**Fix applied**: Use a plain `<a>` tag for logout links (or any link to API routes with side effects). Added a code comment explaining why `<a>` must be used. Never use Next.js `<Link>` for API routes that modify cookies or have side effects.
+
+## 2026-03-21 - Gotcha
+
+**Context**: `vercel.json` `env` block overrides dashboard environment variables
+**Correction**: Environment variables set in `vercel.json` take precedence over those configured in the Vercel dashboard. The `STRAVA_REDIRECT_URI` and `STRAVA_CLIENT_ID` were hardcoded in `vercel.json` pointing to an old project (`strava-webhook-poc`), silently overriding the correct values set in the dashboard.
+**Root cause**: `vercel.json` env values are not encrypted and committed to git. They override dashboard-set env vars without warning.
+**Fix applied**: Removed the `env` block from `vercel.json`. All environment variables should be managed exclusively via the Vercel dashboard where they are encrypted. Never put credentials or environment-specific values in `vercel.json`.

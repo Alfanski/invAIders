@@ -1,10 +1,17 @@
 import { v } from 'convex/values';
 
 import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 import { internalAction } from './_generated/server';
 import { refreshStravaToken } from './lib/stravaApi';
 
 const TOKEN_REFRESH_BUFFER_SEC = 300;
+
+interface PipelineTokenResult {
+  accessToken: string;
+  athleteId: Id<'athletes'>;
+  athleteName: string;
+}
 
 /**
  * Resolves an athlete by Strava ID, returns a valid access token
@@ -14,7 +21,7 @@ export const getTokenForPipeline = internalAction({
   args: {
     stravaAthleteId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<PipelineTokenResult> => {
     const athlete = await ctx.runQuery(internal.athletes.getByStravaAthleteId, {
       stravaAthleteId: args.stravaAthleteId,
     });
@@ -30,7 +37,7 @@ export const getTokenForPipeline = internalAction({
     }
 
     const now = Math.floor(Date.now() / 1000);
-    let accessToken = tokenDoc.accessToken;
+    let accessToken: string = tokenDoc.accessToken;
 
     if (tokenDoc.expiresAt <= now + TOKEN_REFRESH_BUFFER_SEC) {
       const clientId = process.env['STRAVA_CLIENT_ID'];

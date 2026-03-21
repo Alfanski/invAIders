@@ -256,7 +256,7 @@ export const computeFormSnapshots = internalAction({
     }
 
     const dailyTrimps = buildDailyTrimps(
-      activities.map((a) => ({
+      activities.map((a: { startDate: string; trimp?: number; movingTimeSec: number }) => ({
         startDate: a.startDate,
         ...(a.trimp != null ? { trimp: a.trimp } : {}),
         movingTimeSec: a.movingTimeSec,

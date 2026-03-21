@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { CoachOrb } from '@/components/coach/coach-orb';
@@ -13,6 +13,10 @@ export default async function DashboardLayout({
 }: Readonly<{ children: ReactNode }>): Promise<ReactNode> {
   const session = await getSession();
 
+  if (!session) {
+    redirect('/');
+  }
+
   return (
     <CoachProvider>
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
@@ -20,21 +24,19 @@ export default async function DashboardLayout({
           <h1 className="text-2xl font-bold tracking-tight">
             m<span className="text-accent">AI</span>coach
           </h1>
-          <Link
+          {/* Plain <a> tag -- Next.js <Link> would prefetch /api/auth/logout,
+              which clears the session cookie and logs the user out. */}
+          <a
             href="/api/auth/logout"
             className="rounded-lg border border-glass-border px-3 py-1.5 text-xs font-medium text-glass-text-muted transition hover:bg-glass-hover hover:text-glass-text"
           >
             Sign out
-          </Link>
+          </a>
         </header>
         <DashboardTabBar />
-        {session ? (
-          <SessionProvider athleteId={session.athleteId} stravaAthleteId={session.stravaAthleteId}>
-            {children}
-          </SessionProvider>
-        ) : (
-          children
-        )}
+        <SessionProvider athleteId={session.athleteId} stravaAthleteId={session.stravaAthleteId}>
+          {children}
+        </SessionProvider>
       </div>
       <CoachOrb />
       <CoachPanel />

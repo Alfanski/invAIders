@@ -188,7 +188,7 @@ function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
                 </p>
                 {dailyPlan.recommendations.length > 0 && (
                   <ul className="mt-2 space-y-1">
-                    {dailyPlan.recommendations.map((rec) => (
+                    {dailyPlan.recommendations.map((rec: string) => (
                       <li key={rec} className="text-xs leading-relaxed text-glass-text-muted">
                         &bull; {rec}
                       </li>

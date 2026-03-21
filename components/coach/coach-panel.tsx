@@ -32,6 +32,9 @@ async function sendToCoachAPI(
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Your session has expired. Please sign out and sign in again.');
+    }
     const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     throw new Error(
       typeof err['message'] === 'string'
