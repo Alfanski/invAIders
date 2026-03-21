@@ -128,8 +128,10 @@ push_one_file() {
 
   if [[ -n "$workflow_id" ]]; then
     echo "  Updating workflow '$name' (id: $workflow_id)..."
+    local body
+    body=$(python3 -c "import json; d=json.load(open('$file')); [d.pop(k,None) for k in ['id','active','createdAt','updatedAt']]; print(json.dumps(d))")
     local response
-    response=$(api PUT "/workflows/$workflow_id" -d @"$file")
+    response=$(echo "$body" | api PUT "/workflows/$workflow_id" -d @-)
     local updated_id
     updated_id=$(echo "$response" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id','?'))" 2>/dev/null || echo "?")
     echo "  Updated: $updated_id"

@@ -78,3 +78,10 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 **Correction**: Environment variables set in `vercel.json` take precedence over those configured in the Vercel dashboard. The `STRAVA_REDIRECT_URI` and `STRAVA_CLIENT_ID` were hardcoded in `vercel.json` pointing to an old project (`strava-webhook-poc`), silently overriding the correct values set in the dashboard.
 **Root cause**: `vercel.json` env values are not encrypted and committed to git. They override dashboard-set env vars without warning.
 **Fix applied**: Removed the `env` block from `vercel.json`. All environment variables should be managed exclusively via the Vercel dashboard where they are encrypted. Never put credentials or environment-specific values in `vercel.json`.
+
+## 2026-03-21 - Gotcha
+
+**Context**: Deploying n8n workflow via REST API with node-level settings and updated code
+**Correction**: The n8n public API PUT `/workflows/:id` returns `400: request/body/id is read-only` when the body includes `id` or `active` fields. Additionally, node-level settings (`onError`, `retryOnFail`, `maxTries`, `waitBetweenTries`) are silently stripped from the response.
+**Root cause**: The n8n OpenAPI schema marks `id` and `active` as read-only fields. These must be stripped before PUT requests. Node-level error/retry settings are not part of the schema and can only be set via the n8n UI. This was a known issue (GitHub #18574) partially fixed in v1.119.0 for `parameters`, but node-level settings like `onError` remain unsupported.
+**Fix applied**: Updated `sync.sh` `push_one_file()` to strip `id`, `active`, `createdAt`, `updatedAt` before PUT. For resilience without `onError`/`retryOnFail`, use workflow-level patterns instead: IF nodes to skip nodes that might fail (e.g., skip Fetch Streams for manual activities), and Wait nodes to space out rate-limited API calls.

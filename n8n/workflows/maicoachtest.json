@@ -54,6 +54,35 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-start-latlng",
+              "leftValue": "={{ $json.start_latlng }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1000, 300],
+      "id": "ec3a9428-7b71-43f8-b814-ecbdb8d306dc",
+      "name": "Has Streams?"
+    },
+    {
+      "parameters": {
         "method": "GET",
         "url": "=https://www.strava.com/api/v3/activities/{{ $('Webhook').first().json.body.stravaActivityId }}/streams?keys=time,latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp,grade_smooth&key_type=type",
         "sendHeaders": true,
@@ -69,9 +98,29 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1000, 300],
+      "position": [1250, 200],
       "id": "11223344-5566-4778-899a-aabbccddeeff",
       "name": "Fetch Streams"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "empty-streams",
+              "name": "noStreams",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1250, 450],
+      "id": "6d7adea2-db2c-44b0-8fd4-9363988f3bb9",
+      "name": "Empty Streams"
     },
     {
       "parameters": {
@@ -84,7 +133,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1250, 300],
+      "position": [1500, 300],
       "id": "aabb1122-3344-4556-6778-8899aabbccdd",
       "name": "Upsert Activity"
     },
@@ -99,19 +148,30 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1500, 300],
+      "position": [1750, 300],
       "id": "12345678-abcd-4ef0-1234-567890abcdef",
       "name": "Set Status Analyzing"
     },
     {
       "parameters": {
-        "jsCode": "const activity = $('Fetch Activity').first().json;\nconst streamsRaw = $('Fetch Streams').first().json;\n\n// Strava returns array of stream objects; reconstruct as keyed object\nconst streamArray = Array.isArray(streamsRaw) ? streamsRaw : [streamsRaw];\nconst streams = {};\nfor (const s of streamArray) {\n  const key = s.series_type || s.type;\n  if (key) streams[key] = s;\n}\n\nconst timeData = streams.time?.data || [];\nif (timeData.length === 0) {\n  return [{ json: { downsampled: null, scoutPrompt: 'No stream data. Analyze based on activity summary only.\\n' + JSON.stringify({ name: activity.name, type: activity.sport_type, distance: activity.distance, moving_time: activity.moving_time }, null, 2) } }];\n}\n\n// Downsample (rolling window avg, ~500 points max)\nconst durationSec = timeData[timeData.length - 1] || 0;\nconst windowSec = Math.max(30, Math.ceil(durationSec / 500));\nfunction avgSlice(data, start, end) {\n  let sum = 0, count = 0;\n  for (let i = start; i < end; i++) { if (data[i] !== undefined) { sum += data[i]; count++; } }\n  return count > 0 ? Math.round((sum / count) * 100) / 100 : 0;\n}\n\nconst ds = { timeSec: [], meta: { windowSec, pointCount: 0 } };\nconst hrData = streams.heartrate?.data;\nconst velData = streams.velocity_smooth?.data;\nconst altData = streams.altitude?.data;\nconst cadData = streams.cadence?.data;\nconst distData = streams.distance?.data;\nconst latlngData = streams.latlng?.data;\nconst gradeData = streams.grade_smooth?.data;\n\nif (hrData) ds.heartrateBpm = [];\nif (velData) ds.velocitySmooth = [];\nif (altData) ds.altitudeM = [];\nif (cadData) ds.cadenceRpm = [];\nif (distData) ds.distanceM = [];\nif (latlngData) ds.latlng = [];\nif (gradeData) ds.gradeSmooth = [];\n\nlet wStart = 0;\nwhile (wStart < timeData.length) {\n  const wTime = timeData[wStart] || 0;\n  let wEnd = wStart;\n  while (wEnd < timeData.length && (timeData[wEnd] || 0) < wTime + windowSec) wEnd++;\n  if (wEnd === wStart) wEnd++;\n  ds.timeSec.push(wTime);\n  if (distData && ds.distanceM) ds.distanceM.push(distData[wEnd - 1] || 0);\n  if (latlngData && ds.latlng) { const p = latlngData[wEnd-1]; ds.latlng.push(p ? [p[0],p[1]] : [0,0]); }\n  if (altData && ds.altitudeM) ds.altitudeM.push(avgSlice(altData, wStart, wEnd));\n  if (hrData && ds.heartrateBpm) ds.heartrateBpm.push(avgSlice(hrData, wStart, wEnd));\n  if (velData && ds.velocitySmooth) ds.velocitySmooth.push(avgSlice(velData, wStart, wEnd));\n  if (cadData && ds.cadenceRpm) ds.cadenceRpm.push(avgSlice(cadData, wStart, wEnd));\n  if (gradeData && ds.gradeSmooth) ds.gradeSmooth.push(avgSlice(gradeData, wStart, wEnd));\n  wStart = wEnd;\n}\nds.meta.pointCount = ds.timeSec.length;\n\n// Compute HR drift for scout\nlet hrDrift = null;\nif (hrData && hrData.length > 10) {\n  const first20 = avgSlice(hrData, 0, Math.floor(hrData.length * 0.2));\n  const last20 = avgSlice(hrData, Math.floor(hrData.length * 0.8), hrData.length);\n  hrDrift = Math.round(last20 - first20);\n}\n\n// Build scout prompt\nconst distKm = (activity.distance / 1000).toFixed(2);\nconst durMin = Math.round(activity.moving_time / 60);\nconst ps = activity.distance > 0 ? Math.round(activity.moving_time / (activity.distance / 1000)) : 0;\nconst paceStr = Math.floor(ps/60) + ':' + String(ps%60).padStart(2,'0');\n\nlet sp = 'Analyze this workout and return JSON with: workoutClassification (string), keyObservations (array of 3-5 strings), analysisDirectives (array of 2-3 strings), relevantCoachingFrameworks (array of strings).\\n\\n';\nsp += '## Activity\\n';\nsp += '- Name: ' + activity.name + '\\n';\nsp += '- Type: ' + activity.sport_type + '\\n';\nsp += '- Distance: ' + distKm + ' km\\n';\nsp += '- Duration: ' + durMin + ' min\\n';\nsp += '- Pace: ' + paceStr + ' /km\\n';\nsp += '- Elevation: ' + (activity.total_elevation_gain || 0) + ' m\\n';\nif (activity.average_heartrate) sp += '- Avg HR: ' + Math.round(activity.average_heartrate) + ' bpm\\n';\nif (activity.max_heartrate) sp += '- Max HR: ' + Math.round(activity.max_heartrate) + ' bpm\\n';\nif (hrDrift !== null) sp += '- HR Drift: ' + (hrDrift > 0 ? '+' : '') + hrDrift + ' bpm\\n';\nif (activity.average_cadence) sp += '- Cadence: ' + Math.round(activity.average_cadence) + ' rpm\\n';\n\nif (activity.splits_metric && Array.isArray(activity.splits_metric)) {\n  sp += '\\n## Splits\\n';\n  for (const s of activity.splits_metric) {\n    const splitPace = s.average_speed > 0 ? Math.round(1000 / s.average_speed) : 0;\n    sp += 'Km ' + s.split + ': ' + Math.floor(splitPace/60) + ':' + String(splitPace%60).padStart(2,'0') + ' /km';\n    if (s.average_heartrate) sp += ' (' + Math.round(s.average_heartrate) + ' bpm)';\n    sp += '\\n';\n  }\n}\n\nreturn [{ json: { downsampled: ds, scoutPrompt: sp, hrDrift } }];"
+        "jsCode": "const activity = $('Fetch Activity').first().json;\n\n// Safely get streams -- may be empty if activity has no GPS data\nlet streamsRaw;\ntry {\n  streamsRaw = $('Fetch Streams').first().json;\n} catch {\n  streamsRaw = null;\n}\n\n// Detect missing/error streams (404, error objects, non-array responses)\nlet streams = {};\nif (streamsRaw && !streamsRaw.errors && !streamsRaw.message && !streamsRaw.noStreams) {\n  const streamArray = Array.isArray(streamsRaw) ? streamsRaw : [streamsRaw];\n  for (const s of streamArray) {\n    const key = s.series_type || s.type;\n    if (key) streams[key] = s;\n  }\n}\n\nconst timeData = streams.time?.data || [];\nif (timeData.length === 0) {\n  const distKm = activity.distance ? (activity.distance / 1000).toFixed(2) : '0';\n  const durMin = activity.moving_time ? Math.round(activity.moving_time / 60) : (activity.elapsed_time ? Math.round(activity.elapsed_time / 60) : 0);\n  let fallback = 'No stream data available. Analyze based on activity summary only.\\n\\n';\n  fallback += '## Activity\\n';\n  fallback += '- Name: ' + (activity.name || 'Untitled') + '\\n';\n  fallback += '- Type: ' + (activity.sport_type || activity.type || 'Unknown') + '\\n';\n  fallback += '- Distance: ' + distKm + ' km\\n';\n  fallback += '- Duration: ' + durMin + ' min\\n';\n  if (activity.total_elevation_gain) fallback += '- Elevation: ' + activity.total_elevation_gain + ' m\\n';\n  if (activity.average_heartrate) fallback += '- Avg HR: ' + Math.round(activity.average_heartrate) + ' bpm\\n';\n  if (activity.max_heartrate) fallback += '- Max HR: ' + Math.round(activity.max_heartrate) + ' bpm\\n';\n  if (activity.average_cadence) fallback += '- Cadence: ' + Math.round(activity.average_cadence) + ' rpm\\n';\n  fallback += '\\nReturn JSON with: workoutClassification (string), keyObservations (array of 3-5 strings), analysisDirectives (array of 2-3 strings), relevantCoachingFrameworks (array of strings).';\n  return [{ json: { downsampled: null, scoutPrompt: fallback, hrDrift: null } }];\n}\n\n// Downsample (rolling window avg, ~500 points max)\nconst durationSec = timeData[timeData.length - 1] || 0;\nconst windowSec = Math.max(30, Math.ceil(durationSec / 500));\nfunction avgSlice(data, start, end) {\n  let sum = 0, count = 0;\n  for (let i = start; i < end; i++) { if (data[i] !== undefined) { sum += data[i]; count++; } }\n  return count > 0 ? Math.round((sum / count) * 100) / 100 : 0;\n}\n\nconst ds = { timeSec: [], meta: { windowSec, pointCount: 0 } };\nconst hrData = streams.heartrate?.data;\nconst velData = streams.velocity_smooth?.data;\nconst altData = streams.altitude?.data;\nconst cadData = streams.cadence?.data;\nconst distData = streams.distance?.data;\nconst latlngData = streams.latlng?.data;\nconst gradeData = streams.grade_smooth?.data;\n\nif (hrData) ds.heartrateBpm = [];\nif (velData) ds.velocitySmooth = [];\nif (altData) ds.altitudeM = [];\nif (cadData) ds.cadenceRpm = [];\nif (distData) ds.distanceM = [];\nif (latlngData) ds.latlng = [];\nif (gradeData) ds.gradeSmooth = [];\n\nlet wStart = 0;\nwhile (wStart < timeData.length) {\n  const wTime = timeData[wStart] || 0;\n  let wEnd = wStart;\n  while (wEnd < timeData.length && (timeData[wEnd] || 0) < wTime + windowSec) wEnd++;\n  if (wEnd === wStart) wEnd++;\n  ds.timeSec.push(wTime);\n  if (distData && ds.distanceM) ds.distanceM.push(distData[wEnd - 1] || 0);\n  if (latlngData && ds.latlng) { const p = latlngData[wEnd-1]; ds.latlng.push(p ? [p[0],p[1]] : [0,0]); }\n  if (altData && ds.altitudeM) ds.altitudeM.push(avgSlice(altData, wStart, wEnd));\n  if (hrData && ds.heartrateBpm) ds.heartrateBpm.push(avgSlice(hrData, wStart, wEnd));\n  if (velData && ds.velocitySmooth) ds.velocitySmooth.push(avgSlice(velData, wStart, wEnd));\n  if (cadData && ds.cadenceRpm) ds.cadenceRpm.push(avgSlice(cadData, wStart, wEnd));\n  if (gradeData && ds.gradeSmooth) ds.gradeSmooth.push(avgSlice(gradeData, wStart, wEnd));\n  wStart = wEnd;\n}\nds.meta.pointCount = ds.timeSec.length;\n\n// Compute HR drift for scout\nlet hrDrift = null;\nif (hrData && hrData.length > 10) {\n  const first20 = avgSlice(hrData, 0, Math.floor(hrData.length * 0.2));\n  const last20 = avgSlice(hrData, Math.floor(hrData.length * 0.8), hrData.length);\n  hrDrift = Math.round(last20 - first20);\n}\n\n// Build scout prompt\nconst distKm = (activity.distance / 1000).toFixed(2);\nconst durMin = Math.round(activity.moving_time / 60);\nconst ps = activity.distance > 0 ? Math.round(activity.moving_time / (activity.distance / 1000)) : 0;\nconst paceStr = Math.floor(ps/60) + ':' + String(ps%60).padStart(2,'0');\n\nlet sp = 'Analyze this workout and return JSON with: workoutClassification (string), keyObservations (array of 3-5 strings), analysisDirectives (array of 2-3 strings), relevantCoachingFrameworks (array of strings).\\n\\n';\nsp += '## Activity\\n';\nsp += '- Name: ' + activity.name + '\\n';\nsp += '- Type: ' + activity.sport_type + '\\n';\nsp += '- Distance: ' + distKm + ' km\\n';\nsp += '- Duration: ' + durMin + ' min\\n';\nsp += '- Pace: ' + paceStr + ' /km\\n';\nsp += '- Elevation: ' + (activity.total_elevation_gain || 0) + ' m\\n';\nif (activity.average_heartrate) sp += '- Avg HR: ' + Math.round(activity.average_heartrate) + ' bpm\\n';\nif (activity.max_heartrate) sp += '- Max HR: ' + Math.round(activity.max_heartrate) + ' bpm\\n';\nif (hrDrift !== null) sp += '- HR Drift: ' + (hrDrift > 0 ? '+' : '') + hrDrift + ' bpm\\n';\nif (activity.average_cadence) sp += '- Cadence: ' + Math.round(activity.average_cadence) + ' rpm\\n';\n\nif (activity.splits_metric && Array.isArray(activity.splits_metric)) {\n  sp += '\\n## Splits\\n';\n  for (const s of activity.splits_metric) {\n    const splitPace = s.average_speed > 0 ? Math.round(1000 / s.average_speed) : 0;\n    sp += 'Km ' + s.split + ': ' + Math.floor(splitPace/60) + ':' + String(splitPace%60).padStart(2,'0') + ' /km';\n    if (s.average_heartrate) sp += ' (' + Math.round(s.average_heartrate) + ' bpm)';\n    sp += '\\n';\n  }\n}\n\nreturn [{ json: { downsampled: ds, scoutPrompt: sp, hrDrift } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1750, 300],
+      "position": [2000, 300],
       "id": "ccdd1234-5678-4abc-def0-123456789abc",
       "name": "Code Downsample"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2250, 300],
+      "id": "245882f6-bb84-46f7-ad1a-0f10ebd816c7",
+      "name": "Wait Before Scout"
     },
     {
       "parameters": {
@@ -126,7 +186,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 300],
+      "position": [2500, 300],
       "id": "dd112233-4455-4667-8899-aabbccddeef0",
       "name": "Scout Gemini"
     },
@@ -136,9 +196,20 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2250, 300],
+      "position": [2750, 300],
       "id": "ee112233-4455-4667-8899-aabbccddeef1",
       "name": "Code Build Prompt"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [3000, 300],
+      "id": "aedbb9ea-372a-4759-94fd-b95530976ff3",
+      "name": "Wait Before Analysis"
     },
     {
       "parameters": {
@@ -153,7 +224,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2500, 300],
+      "position": [3250, 300],
       "id": "ff112233-4455-4667-8899-aabbccddeef2",
       "name": "Analysis Gemini"
     },
@@ -163,7 +234,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2750, 300],
+      "position": [3500, 300],
       "id": "00112233-4455-4667-8899-aabbccddeef3",
       "name": "Code Parse Analysis"
     },
@@ -178,7 +249,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3000, 300],
+      "position": [3750, 300],
       "id": "11223344-5566-4778-899a-bbccddeeff00",
       "name": "Store Analysis"
     },
@@ -204,7 +275,7 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [3250, 300],
+      "position": [4000, 300],
       "id": "22334455-6677-4889-9aab-bccddee0ff11",
       "name": "Pipeline Complete"
     },
@@ -212,7 +283,7 @@
       "parameters": {},
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
-      "position": [2000, 600],
+      "position": [2500, 600],
       "id": "33445566-7788-4990-aabb-ccddee0ff122",
       "name": "Error Trigger"
     },
@@ -238,7 +309,7 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2250, 600],
+      "position": [2750, 600],
       "id": "44556677-8899-4aa0-bbcc-ddee0ff12233",
       "name": "Log Error"
     }
@@ -251,9 +322,18 @@
       "main": [[{ "node": "Fetch Activity", "type": "main", "index": 0 }]]
     },
     "Fetch Activity": {
-      "main": [[{ "node": "Fetch Streams", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Has Streams?", "type": "main", "index": 0 }]]
+    },
+    "Has Streams?": {
+      "main": [
+        [{ "node": "Fetch Streams", "type": "main", "index": 0 }],
+        [{ "node": "Empty Streams", "type": "main", "index": 0 }]
+      ]
     },
     "Fetch Streams": {
+      "main": [[{ "node": "Upsert Activity", "type": "main", "index": 0 }]]
+    },
+    "Empty Streams": {
       "main": [[{ "node": "Upsert Activity", "type": "main", "index": 0 }]]
     },
     "Upsert Activity": {
@@ -263,12 +343,18 @@
       "main": [[{ "node": "Code Downsample", "type": "main", "index": 0 }]]
     },
     "Code Downsample": {
+      "main": [[{ "node": "Wait Before Scout", "type": "main", "index": 0 }]]
+    },
+    "Wait Before Scout": {
       "main": [[{ "node": "Scout Gemini", "type": "main", "index": 0 }]]
     },
     "Scout Gemini": {
       "main": [[{ "node": "Code Build Prompt", "type": "main", "index": 0 }]]
     },
     "Code Build Prompt": {
+      "main": [[{ "node": "Wait Before Analysis", "type": "main", "index": 0 }]]
+    },
+    "Wait Before Analysis": {
       "main": [[{ "node": "Analysis Gemini", "type": "main", "index": 0 }]]
     },
     "Analysis Gemini": {
