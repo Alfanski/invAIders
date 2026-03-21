@@ -10,6 +10,7 @@ import {
   StravaRateLimitError,
   deriveActivityBucket,
   fetchActivitiesList,
+  fetchActivityDetail,
   fetchActivityStreams,
   fetchAthleteZones,
   refreshStravaToken,
@@ -551,5 +552,115 @@ export const fetchStreamsOnDemand = action({
       );
       return { status: 'error' as const };
     }
+  },
+});
+
+// ---------------------------------------------------------------------------
+// manualFullSync: one-off full sync for an athlete.
+// Fetches activity detail (splits, laps) + streams for every activity.
+// API cost: 2 calls per activity (detail + streams).
+// ---------------------------------------------------------------------------
+
+export const manualFullSync = internalAction({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    const token = await getValidAccessToken(ctx, args.athleteId);
+
+    const athlete = await ctx.runQuery(internal.athletes.getById, {
+      athleteId: args.athleteId,
+    });
+    const athleteProfile: AthleteProfile = {
+      ...(athlete?.sex ? { sex: athlete.sex } : {}),
+      ...(athlete?.restingHr != null ? { restingHr: athlete.restingHr } : {}),
+      ...(athlete?.maxHr != null ? { maxHr: athlete.maxHr } : {}),
+    };
+
+    const allActivities: StravaActivitySummary[] = [];
+    for (let page = 1; page <= MAX_BACKFILL_PAGES; page++) {
+      const batch = await fetchActivitiesList(token, { page, perPage: 200 });
+      allActivities.push(...batch);
+      if (batch.length < 200) break;
+    }
+
+    console.log(`manualFullSync: found ${String(allActivities.length)} activities on Strava`);
+
+    let upserted = 0;
+    let streamsStored = 0;
+
+    for (const summary of allActivities) {
+      let detail: StravaActivitySummary;
+      try {
+        detail = await fetchActivityDetail(token, String(summary.id));
+      } catch (err) {
+        if (err instanceof StravaRateLimitError) {
+          console.warn(`manualFullSync: rate limited after ${String(upserted)} activities`);
+          return;
+        }
+        console.warn(
+          `manualFullSync: detail fetch failed for ${String(summary.id)}:`,
+          err instanceof Error ? err.message : String(err),
+        );
+        detail = summary;
+      }
+
+      await ctx.runMutation(
+        internal.activities.upsertFromStrava,
+        buildActivityArgs(args.athleteId, detail, athleteProfile),
+      );
+      upserted++;
+
+      const activityDoc = await ctx.runQuery(internal.activities.getByStravaId, {
+        stravaActivityId: String(summary.id),
+      });
+      if (!activityDoc) continue;
+
+      try {
+        const streams = await fetchActivityStreams(token, String(summary.id));
+        const downsampled = downsampleStreams(streams);
+
+        if (downsampled) {
+          const stats = computeStreamStats(downsampled);
+          await ctx.runMutation(internal.activityStreams.upsertForActivity, {
+            activityId: activityDoc._id,
+            kind: 'downsampled',
+            timeSec: downsampled.timeSec,
+            ...(downsampled.distanceM ? { distanceM: downsampled.distanceM } : {}),
+            ...(downsampled.latlng ? { latlng: downsampled.latlng } : {}),
+            ...(downsampled.altitudeM ? { altitudeM: downsampled.altitudeM } : {}),
+            ...(downsampled.heartrateBpm ? { heartrateBpm: downsampled.heartrateBpm } : {}),
+            ...(downsampled.cadenceRpm ? { cadenceRpm: downsampled.cadenceRpm } : {}),
+            ...(downsampled.watts ? { watts: downsampled.watts } : {}),
+            ...(downsampled.velocitySmooth ? { velocitySmooth: downsampled.velocitySmooth } : {}),
+            ...(downsampled.tempC ? { tempC: downsampled.tempC } : {}),
+            ...(downsampled.gradeSmooth ? { gradeSmooth: downsampled.gradeSmooth } : {}),
+            meta: downsampled.meta,
+            stats,
+          });
+          streamsStored++;
+        }
+      } catch (err) {
+        if (err instanceof StravaRateLimitError) {
+          console.warn(
+            `manualFullSync: rate limited during stream fetch after ${String(streamsStored)} streams`,
+          );
+          return;
+        }
+        if (err instanceof StravaApiError && err.status === 404) {
+          continue;
+        }
+        console.warn(
+          `manualFullSync: stream fetch failed for ${String(summary.id)}:`,
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    }
+
+    await ctx.scheduler.runAfter(0, internal.stravaSync.computeFormSnapshots, {
+      athleteId: args.athleteId,
+    });
+
+    console.log(
+      `manualFullSync complete: ${String(upserted)} activities upserted, ${String(streamsStored)} streams stored`,
+    );
   },
 });
