@@ -36,3 +36,31 @@ or you discover a pattern worth remembering.
 **Correction**: Existing project had a team configuration issue that silently failed all CLI deploys (0ms build, no logs, `errorLink` pointing to team-configuration docs). Creating a new project `coachagent` under the same team worked immediately.
 **Root cause**: The original `invaiders` project had `"framework": null` and possibly restrictive team deploy settings. The error was not surfaced by CLI output -- had to query the deployments API to find `errorLink`.
 **Fix applied**: Created fresh project `coachagent` on Vercel. Vercel project name is now `coachagent` under team `lorenzohackathon-invaiders`. Use `vercel inspect` + API for debugging silent deploy failures.
+
+## 2026-03-21 - Gotcha
+
+**Context**: Adding Vercel env vars for `preview` scope via CLI
+**Correction**: The CLI (`v50.34.3`) prompts for a git branch when adding preview env vars. The `--value` and `--yes` flags it suggests in the error output do not actually bypass the prompt -- it's a CLI bug.
+**Root cause**: Vercel CLI v50+ has an unresolved interactive prompt for preview env vars that cannot be bypassed non-interactively.
+**Fix applied**: Use the Vercel REST API directly for preview-scoped env vars:
+
+```
+curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId}" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"VAR_NAME","value":"VAR_VALUE","target":["preview"],"type":"encrypted"}'
+```
+
+## 2026-03-21 - Gotcha
+
+**Context**: Changing Vercel project production branch programmatically
+**Correction**: Tried multiple PATCH API field names (`gitRepository`, `productionDeploymentBranch`) -- none worked. The Vercel REST API does not expose the production branch as an updatable field.
+**Root cause**: Vercel's v9 projects PATCH endpoint has strict validation and the production branch is only settable via the dashboard (Settings → Environments → Production).
+**Fix applied**: Change production branch in the Vercel dashboard only. Document this as a manual step in deployment guides.
+
+## 2026-03-21 - Pattern
+
+**Context**: Deploying a POC branch as a separate Vercel project
+**Correction**: Agent over-complicated the setup by trying production deploys, then reverting. A simpler flow: create project via CLI, set env vars for all scopes, push to branch, let Git Integration handle deploys.
+**Root cause**: No established pattern for multi-project Vercel setups in the docs.
+**Fix applied**: Documented the pattern in AGENTS.md. Key steps: (1) `vercel link --project <name>` to create, (2) set env vars per scope (use REST API for preview), (3) set production branch in dashboard, (4) push to branch.

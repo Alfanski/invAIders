@@ -32,6 +32,17 @@ AI fitness coach powered by Strava. Analyzes workouts, generates dashboards, del
 
 _Add further design docs as `docs/design/DD-NNN-title.md`._
 
+## Infrastructure
+
+| Component                     | Details                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| Vercel (`coachagent`)         | Main app, deploys from `main`                                            |
+| Vercel (`strava-webhook-poc`) | Webhook POC, deploys from `poc`                                          |
+| Strava Webhook                | Subscription ID `336243`, endpoint at `/api/webhooks/strava`             |
+| n8n Cloud                     | `https://lorenzo-hackathon.app.n8n.cloud`, workflows in `n8n/workflows/` |
+
+See [AGENTS.md](../AGENTS.md) for full Vercel project details, Strava API commands, and env var setup.
+
 ## Quick Links
 
 | Doc                                           | Purpose                                                     |

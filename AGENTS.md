@@ -61,6 +61,36 @@ source .env.local
 curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows"
 ```
 
+### Vercel Deployments
+
+Two Vercel projects deploy from the same GitHub repo (`Alfanski/invAIders`):
+
+| Project              | Branch | Purpose            | URL                                     |
+| -------------------- | ------ | ------------------ | --------------------------------------- |
+| `coachagent`         | `main` | Main app           | `https://coachagent.vercel.app`         |
+| `strava-webhook-poc` | `poc`  | Strava webhook POC | `https://strava-webhook-poc.vercel.app` |
+
+- **Team:** `lorenzohackathon-invaiders`
+- **Git Integration:** Both projects auto-deploy on push to their respective branches
+- **Production branch:** Set per-project in Vercel Dashboard → Settings → Environments → Production
+- **`.vercel/project.json`** can only point to one project at a time; switch with `vercel link --project <name>`
+- **Env vars for preview scope:** CLI has a bug (v50+), use REST API instead (see `tasks/lessons.md`)
+
+### Strava Webhook
+
+- **Endpoint:** `https://strava-webhook-poc.vercel.app/api/webhooks/strava`
+- **Route:** `app/api/webhooks/strava/route.ts`
+- **Subscription ID:** `336243`
+- **Verify token:** stored in `STRAVA_WEBHOOK_VERIFY_TOKEN` env var
+
+**GET** — Strava subscription validation (hub challenge handshake).
+**POST** — Receives activity events, filters for `activity/create`, forwards to n8n via fire-and-forget `fetch()`.
+
+Env vars required on the Vercel project:
+
+- `STRAVA_WEBHOOK_VERIFY_TOKEN` — matches the token used during subscription registration
+- `N8N_STRAVA_WEBHOOK_URL` — n8n webhook endpoint to forward activity events to
+
 ### Key Data Flow
 
 1. Strava webhook/poll detects new activity
@@ -108,9 +138,36 @@ Every activity record tracks its pipeline state:
 - Don't call it "Body Battery" (Garmin trademark) -- use "Coach Status"
 - Don't rely on `suffer_score` alone (premium-only) -- compute TRIMP as fallback
 
-## Strava API Limits
+## Strava API
+
+### Rate Limits
 
 100 requests per 15 minutes, 1000 per day. Plan API calls carefully.
+
+### Webhook Subscription
+
+Registered via:
+
+```bash
+set -a && source .env.local && set +a
+curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+  -d "client_id=$STRAVA_CLIENT_ID" \
+  -d "client_secret=$STRAVA_CLIENT_SECRET" \
+  -d "callback_url=https://strava-webhook-poc.vercel.app/api/webhooks/strava" \
+  -d "verify_token=$STRAVA_WEBHOOK_VERIFY_TOKEN"
+```
+
+To list existing subscriptions:
+
+```bash
+curl -s "https://www.strava.com/api/v3/push_subscriptions?client_id=$STRAVA_CLIENT_ID&client_secret=$STRAVA_CLIENT_SECRET"
+```
+
+To delete a subscription:
+
+```bash
+curl -X DELETE "https://www.strava.com/api/v3/push_subscriptions/336243?client_id=$STRAVA_CLIENT_ID&client_secret=$STRAVA_CLIENT_SECRET"
+```
 
 ## Documentation
 
