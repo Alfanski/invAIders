@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { CoachOrb } from '@/components/coach/coach-orb';
 import { CoachPanel } from '@/components/coach/coach-panel';
 import { CoachProvider } from '@/components/coach/coach-provider';
+import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { DashboardTabBar } from '@/components/layout/dashboard-tab-bar';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { SessionProvider } from '@/components/providers/session-provider';
@@ -20,7 +21,7 @@ export default async function DashboardLayout({
 
   return (
     <CoachProvider>
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
+      <DashboardShell>
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">
             m<span className="text-accent">AI</span>coach
@@ -41,7 +42,7 @@ export default async function DashboardLayout({
         <SessionProvider athleteId={session.athleteId} stravaAthleteId={session.stravaAthleteId}>
           {children}
         </SessionProvider>
-      </div>
+      </DashboardShell>
       <CoachOrb />
       <CoachPanel />
     </CoachProvider>

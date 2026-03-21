@@ -261,7 +261,8 @@ curl -X DELETE "https://www.strava.com/api/v3/push_subscriptions/336243?client_i
 
 Eclipse Agentic Framework (v0.1.0). Skills: implement, debug, refactor,
 test, pr-review, create-prd, compound, audit-docs, resolve-pr-feedback,
-research, **n8n-workflow**, **vercel-runtime-logs**, **strava-manual-sync**.
+research, **n8n-workflow**, **vercel-runtime-logs**, **strava-manual-sync**,
+**convex-delete-documents**.
 
 <!-- convex-ai-start -->
 

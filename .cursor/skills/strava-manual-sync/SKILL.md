@@ -105,13 +105,22 @@ Then re-run the sync script. Note: this requires `npx convex login` first.
 | `convex/crons.ts` | 15-min poll schedule |
 | `.strava-tokens.json` | Cached Strava OAuth tokens (gitignored) |
 
+## Deployments
+
+| Environment | Convex URL | Convex Athlete ID |
+|-------------|-----------|-------------------|
+| **Production** | `https://effervescent-starling-354.eu-west-1.convex.cloud` | `jn74dcnt10jf5g1pzvx30xnd9x83bj1g` |
+| Dev | `https://fine-ibex-73.eu-west-1.convex.cloud` | `jn7cfd32rnq281x1xw6z08s5p583aaa2` |
+
+The live site (`maicoach.vercel.app`) uses the **production** Convex deployment.
+The dev server (`localhost:3000`) uses the dev deployment.
+
 ## Known Athlete
 
 | Field | Value |
 |-------|-------|
 | Name | Lorenzo Auer |
 | Strava Athlete ID | 948047812 |
-| Convex Athlete ID | jn7cfd32rnq281x1xw6z08s5p583aaa2 |
 | Strava Client ID | 214497 |
 
 ## Troubleshooting
