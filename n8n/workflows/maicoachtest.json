@@ -19,10 +19,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/token",
+        "url": "={{ $vars.CONVEX_SITE_URL }}/api/pipeline/token",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ stravaAthleteId: $json.ownerId, secret: $env.CONVEX_WEBHOOK_SECRET }) }}",
+        "jsonBody": "={{ JSON.stringify({ stravaAthleteId: $json.body.ownerId, secret: $vars.CONVEX_WEBHOOK_SECRET }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://www.strava.com/api/v3/activities/{{ $('Webhook').first().json.stravaActivityId }}",
+        "url": "=https://www.strava.com/api/v3/activities/{{ $('Webhook').first().json.body.stravaActivityId }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -55,7 +55,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://www.strava.com/api/v3/activities/{{ $('Webhook').first().json.stravaActivityId }}/streams?keys=time,latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp,grade_smooth&key_type=type",
+        "url": "=https://www.strava.com/api/v3/activities/{{ $('Webhook').first().json.body.stravaActivityId }}/streams?keys=time,latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp,grade_smooth&key_type=type",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -76,10 +76,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/activity",
+        "url": "={{ $vars.CONVEX_SITE_URL }}/api/pipeline/activity",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ secret: $env.CONVEX_WEBHOOK_SECRET, athleteId: $('Get Token').first().json.athleteId, stravaActivity: $('Fetch Activity').first().json }) }}",
+        "jsonBody": "={{ JSON.stringify({ secret: $vars.CONVEX_WEBHOOK_SECRET, athleteId: $('Get Token').first().json.athleteId, stravaActivity: $('Fetch Activity').first().json }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -91,10 +91,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/status",
+        "url": "={{ $vars.CONVEX_SITE_URL }}/api/pipeline/status",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ secret: $env.CONVEX_WEBHOOK_SECRET, activityId: $json.activityId, status: 'analyzing' }) }}",
+        "jsonBody": "={{ JSON.stringify({ secret: $vars.CONVEX_WEBHOOK_SECRET, activityId: $json.activityId, status: 'analyzing' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -116,7 +116,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.scoutPrompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: 'You are a sports data analyst specializing in endurance training. Examine the workout data and produce a structured JSON analysis brief. Focus on identifying the workout type, key patterns in the data, and what a coach should focus their analysis on. Be specific and data-driven.' }] } }) }}",
@@ -143,7 +143,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.analysisPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: $json.systemPrompt }] } }) }}",
@@ -159,7 +159,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = 'gemini-2.0-flash';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
+        "jsCode": "const resp = $json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = 'gemini-2.0-flash';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -170,10 +170,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.CONVEX_SITE_URL }}/api/pipeline/analysis",
+        "url": "={{ $vars.CONVEX_SITE_URL }}/api/pipeline/analysis",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ secret: $env.CONVEX_WEBHOOK_SECRET, activityId: $json.activityId, analysis: $json.analysis, streams: $json.downsampled }) }}",
+        "jsonBody": "={{ JSON.stringify({ secret: $vars.CONVEX_WEBHOOK_SECRET, activityId: $json.activityId, analysis: $json.analysis, streams: $json.downsampled }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
