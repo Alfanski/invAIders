@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>mAIcoach - Hackathon Pitch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.35);
+    --accent-surface: rgba(99, 102, 241, 0.12);
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-hover: rgba(255, 255, 255, 0.1);
+    --text: rgba(255, 255, 255, 0.9);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --text-dim: rgba(255, 255, 255, 0.35);
+    --green: #22c55e;
+    --rose: #f43f5e;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+    --red: #f87171;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(145deg, #0c0a1a 0%, #12102b 30%, #0e1628 60%, #0a0e1a 100%);
+    color: var(--text);
+    min-height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .bg-mesh::before, .bg-mesh::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.2;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-mesh::before {
+    width: 700px; height: 700px;
+    top: -15%; right: -10%;
+    background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+  }
+  .bg-mesh::after {
+    width: 500px; height: 500px;
+    bottom: -15%; left: -10%;
+    background: radial-gradient(circle, #22c55e 0%, transparent 70%);
+  }
+
+  .deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem 5rem 5rem;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  .slide.exit {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  .slide-inner {
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
+  h2 { font-size: 2.2rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 1.25rem; }
+  h3 { font-size: 1.4rem; font-weight: 600; line-height: 1.3; margin-bottom: 1rem; }
+  p  { font-size: 1.1rem; line-height: 1.6; color: var(--text-muted); }
+  .highlight { color: var(--accent); }
+  .text-green { color: var(--green); }
+  .text-rose { color: var(--rose); }
+  .text-amber { color: var(--amber); }
+  .text-white { color: #fff; }
+
+  .subtitle {
+    font-size: 1.35rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 1rem;
+    line-height: 1.6;
+  }
+
+  .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  .glass {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    backdrop-filter: blur(20px) saturate(1.4);
+    padding: 1.75rem;
+  }
+  .glass-elevated {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
+    backdrop-filter: blur(24px) saturate(1.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+    padding: 2rem;
+  }
+  .glass-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    backdrop-filter: blur(16px);
+    padding: 1.25rem;
+  }
+  .accent-border {
+    border-left: 3px solid var(--accent);
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+  .flex-col { display: flex; flex-direction: column; gap: 1rem; }
+  .flex-row { display: flex; gap: 1rem; align-items: center; }
+  .mt-2 { margin-top: 1.5rem; }
+  .mt-3 { margin-top: 2rem; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: stretch;
+  }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-node {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    text-align: center;
+    min-width: 110px;
+    backdrop-filter: blur(16px);
+  }
+  .flow-node.active-node {
+    border-color: var(--accent);
+    background: var(--accent-surface);
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .flow-node .node-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 0.25rem;
+  }
+  .flow-node .node-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .flow-arrow {
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    padding: 0 0.3rem;
+    flex-shrink: 0;
+  }
+
+  .pipeline-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .pipeline-step:last-child { border-bottom: none; }
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent-surface);
+    border: 1px solid rgba(99,102,241,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: var(--accent);
+    flex-shrink: 0;
+  }
+  .step-content h4 {
+    font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; color: #fff;
+  }
+  .step-content p {
+    font-size: 0.85rem; line-height: 1.5; color: var(--text-muted);
+  }
+
+  .code-block {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.68rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .kw { color: #c084fc; }
+  .code-block .str { color: #34d399; }
+  .code-block .fn { color: #60a5fa; }
+  .code-block .cm { color: var(--text-dim); }
+  .code-block .accent { color: var(--accent); }
+
+  .stat { text-align: center; }
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid rgba(99,102,241,0.3);
+    background: rgba(99,102,241,0.1);
+    color: var(--accent);
+  }
+  .chip.green { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.1); color: var(--green); }
+  .chip.rose { border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.1); color: var(--rose); }
+  .chip.amber { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.1); color: var(--amber); }
+  .chip.blue { border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.1); color: var(--blue); }
+
+  .orb {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    animation: breathe 3s ease-in-out infinite;
+    position: relative;
+  }
+  .orb::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(99,102,241,0.3);
+    animation: ring-pulse 3s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 4px 15px rgba(99,102,241,0.3), 0 0 30px rgba(99,102,241,0.1); }
+    50% { box-shadow: 0 4px 25px rgba(99,102,241,0.5), 0 0 50px rgba(99,102,241,0.2); }
+  }
+  @keyframes ring-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 0; }
+  }
+
+  .chat-bubble {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .chat-coach {
+    background: var(--glass);
+    border-left: 2px solid rgba(99,102,241,0.4);
+    color: var(--text);
+  }
+  .chat-user {
+    background: rgba(99,102,241,0.2);
+    color: #fff;
+  }
+  .chat-label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-bottom: 0.25rem;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 100;
+    background: rgba(12, 10, 26, 0.85);
+    border: 1px solid var(--glass-border);
+    border-radius: 2rem;
+    padding: 0.5rem 1.25rem;
+    backdrop-filter: blur(20px);
+  }
+  .nav-dots {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    padding: 0;
+  }
+  .nav-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    width: 24px;
+    border-radius: 4px;
+  }
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    border-radius: 0.5rem;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+  .nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+  .mode-toggle {
+    position: fixed;
+    top: 1.5rem;
+    right: 2rem;
+    display: flex;
+    gap: 0;
+    z-index: 100;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    background: rgba(12,10,26,0.8);
+    backdrop-filter: blur(16px);
+  }
+  .mode-btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    background: transparent;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .mode-btn.active {
+    background: var(--accent-surface);
+    color: var(--accent);
+  }
+
+  .slide-counter {
+    position: fixed;
+    top: 1.5rem;
+    left: 2rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    z-index: 100;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .brand-corner {
+    position: fixed;
+    bottom: 5rem;
+    right: 2rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    z-index: 100;
+    letter-spacing: 0.05em;
+  }
+  .brand-corner .ai { color: var(--accent); font-weight: 700; }
+
+  .feature-list {
+    list-style: none;
+    padding: 0;
+  }
+  .feature-list li {
+    padding: 0.4rem 0;
+    padding-left: 1.25rem;
+    position: relative;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .feature-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.65em;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .stack-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .tool-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; color: var(--text-muted);
+    padding: 0.4rem 0;
+  }
+  .tool-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
+  }
+
+  .big-quote {
+    font-size: 1.5rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.6;
+    border-left: 3px solid var(--accent);
+    padding-left: 1.5rem;
+    max-width: 700px;
+  }
+
+  .pricing-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .pricing-row:last-child { border-bottom: none; }
+  .pricing-label { font-size: 0.9rem; color: var(--text-muted); }
+  .pricing-value { font-size: 0.9rem; font-weight: 600; color: #fff; }
+</style>
+</head>
+<body class="bg-mesh">
+
+<div class="slide-counter" id="slideCounter">1 / 7</div>
+
+<div class="mode-toggle">
+  <button class="mode-btn active" onclick="setMode('pitch')" id="modePitch">Pitch</button>
+  <button class="mode-btn" onclick="setMode('full')" id="modeFull">Full</button>
+</div>
+
+<div class="brand-corner">m<span class="ai">AI</span>coach</div>
+
+<div class="deck" id="deck">
+
+  <!-- ===== SLIDE 0: TITLE ===== -->
+  <div class="slide" data-pitch="pitch full">
+    <div class="slide-inner" style="text-align: center;">
+      <div class="label">Cursor Hackathon 2026</div>
+      <h1 style="margin-bottom: 0.5rem;">m<span class="highlight">AI</span>coach</h1>
+      <p class="subtitle" style="max-width: 600px; margin: 0.75rem auto 0;">
+        Your AI-powered fitness coach that listens,<br/>
+        analyzes every workout, and talks back.
+      </p>
+      <div class="stack-row" style="justify-content: center; margin-top: 2rem;">
+        <span class="chip">Next.js</span>
+        <span class="chip green">Convex</span>
+        <span class="chip amber">n8n</span>
+        <span class="chip rose">Gemini</span>
+        <span class="chip blue">Strava API</span>
+        <span class="chip">Cursor</span>
+      </div>
+      <p style="margin-top: 3rem; font-size: 0.8rem; color: var(--text-dim);">
+        Team inv<span style="color: var(--accent); font-weight: 600;">AI</span>ders
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 1: THE MARKET PROBLEM ===== -->
+  <div class="slide" data-pitch="pitch full">
+    <div class="slide-inner">
+      <div class="label">The Market Problem</div>
+      <h2>120M Strava athletes generate data.<br/><span class="highlight">Nobody coaches them.</span></h2>
+      <div class="two-col mt-2">
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Who has this problem?</h3>
+            <p style="font-size: 0.85rem;">
+              Recreational endurance athletes -- runners, cyclists, triathletes -- who track workouts with Strava or Garmin but have no one to interpret the data. That's <strong style="color: #fff;">120M+ Strava users</strong>, ~30M monthly active.
+            </p>
+          </div>
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">How big is this market?</h3>
+            <p style="font-size: 0.85rem;">
+              Global sports coaching software: <strong style="color: #fff;">$14B by 2028</strong>. Strava Premium alone does $250M+ ARR. Human running coaches charge $150-400/month.
+            </p>
+          </div>
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">How do they solve it today?</h3>
+            <p style="font-size: 0.85rem;">
+              <strong style="color: #fff;">They don't.</strong> Strava shows charts nobody reads. Garmin gives cryptic scores. TrainingPeaks is for pros. A human coach costs $200+/month and doesn't scale. There is no AI-native coach that talks to you about <em>your</em> data.
+            </p>
+          </div>
+        </div>
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+            <div class="stat-value" style="color: var(--accent);">120M+</div>
+            <div class="stat-label">Strava registered users</div>
+          </div>
+          <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+            <div class="stat-value text-amber">$200+</div>
+            <div class="stat-label">per month for a<br/>human running coach</div>
+          </div>
+          <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+            <div class="stat-value text-rose">0</div>
+            <div class="stat-label">apps that let you voice-chat<br/>about your workout data</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 2: YOUR SOLUTION ===== -->
+  <div class="slide" data-pitch="pitch full">
+    <div class="slide-inner">
+      <div class="label">Your Solution</div>
+      <h2>An AI coach that <span class="highlight">auto-analyzes every workout</span><br/>and lets you talk to it</h2>
+      <div class="two-col mt-2">
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card accent-border" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Zero-Click Analysis</h3>
+            <p style="font-size: 0.85rem;">
+              Upload to Strava. Within seconds, a full AI coaching analysis lands in your dashboard.
+              No clicks, no prompts. The pipeline runs automatically via webhooks.
+            </p>
+          </div>
+          <div class="glass-card accent-border" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Voice-Enabled AI Coach Agent</h3>
+            <p style="font-size: 0.85rem;">
+              Ask "How was my run?" by voice. The agent queries your real data through 9 tools (HR zones, pace, prior workouts, training load) and responds with personalized insights. Not a generic chatbot -- a data-grounded agent.
+            </p>
+          </div>
+          <div class="glass-card accent-border" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Why 10x better?</h3>
+            <p style="font-size: 0.85rem;">
+              Strava shows data. We <strong style="color:#fff;">interpret</strong> it. TrainingPeaks requires expertise. We <strong style="color:#fff;">explain</strong> it in plain language. A human coach sees you weekly. We analyze <strong style="color:#fff;">every single workout, instantly</strong>.
+            </p>
+          </div>
+        </div>
+        <div class="glass-elevated" style="padding: 1.25rem; display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="orb" style="width: 32px; height: 32px;">
+              <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M12 18.5a6.5 6.5 0 006.5-6.5V8a6.5 6.5 0 00-13 0v4a6.5 6.5 0 006.5 6.5z"/>
+                <path d="M12 18.5V22m-4-1h8"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Coach Agent</div>
+              <div style="font-size: 0.6rem; color: var(--text-dim);">Gemini 2.5 Flash + 9 Tools</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.6rem; flex: 1;">
+            <div style="display: flex; justify-content: flex-end;">
+              <div class="chat-bubble chat-user" style="font-size: 0.78rem;">
+                "How was my tempo run yesterday?"
+              </div>
+            </div>
+            <div>
+              <div class="chat-label">Coach</div>
+              <div class="chat-bubble chat-coach" style="font-size: 0.78rem;">
+                Your 8k tempo showed great consistency. Avg HR 162 bpm, right in zone 3. I noticed 6% HR drift in the last 2k -- your aerobic base could use more easy volume. Tomorrow: easy 40-min recovery run.
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+              <div class="chat-bubble chat-user" style="font-size: 0.78rem;">
+                "Compare it to last week's tempo"
+              </div>
+            </div>
+            <div>
+              <div class="chat-label">Coach</div>
+              <div class="chat-bubble chat-coach" style="font-size: 0.78rem;">
+                Pace improved 8 sec/km, HR was 4 bpm lower at same effort. Your fitness is trending up.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 3: BUSINESS MODEL ===== -->
+  <div class="slide" data-pitch="pitch full">
+    <div class="slide-inner">
+      <div class="label">Business Model</div>
+      <h2>Freemium SaaS with <span class="highlight">AI coaching tiers</span></h2>
+      <div class="two-col mt-2">
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem;">
+              <h3 style="font-size: 1rem; margin: 0; color: var(--text-muted);">Free</h3>
+              <span style="font-size: 1.25rem; font-weight: 700; color: #fff;">$0</span>
+            </div>
+            <ul class="feature-list" style="margin: 0;">
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">Dashboard + last 3 activities</li>
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">Basic auto-analysis</li>
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">5 coach chats / month</li>
+            </ul>
+          </div>
+          <div class="glass-card" style="padding: 1.25rem; border: 1px solid rgba(99,102,241,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem;">
+              <h3 style="font-size: 1rem; margin: 0; color: var(--accent);">Pro</h3>
+              <span style="font-size: 1.25rem; font-weight: 700; color: #fff;">$15<span style="font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">/mo</span></span>
+            </div>
+            <ul class="feature-list" style="margin: 0;">
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">Unlimited history + deep analysis</li>
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">Unlimited coach conversations</li>
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">Training load + form tracking</li>
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">Weekly AI training summaries</li>
+              <li style="font-size: 0.85rem; padding: 0.25rem 0;">Voice debriefs (ElevenLabs)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-elevated" style="padding: 1.25rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.75rem;">Unit Economics</div>
+            <div class="pricing-row">
+              <span class="pricing-label">Revenue per user</span>
+              <span class="pricing-value">$15/mo</span>
+            </div>
+            <div class="pricing-row">
+              <span class="pricing-label">Gemini API (analysis + chat)</span>
+              <span class="pricing-value" style="color: var(--rose);">~$0.80</span>
+            </div>
+            <div class="pricing-row">
+              <span class="pricing-label">Convex + Vercel infra</span>
+              <span class="pricing-value" style="color: var(--rose);">~$0.50</span>
+            </div>
+            <div class="pricing-row">
+              <span class="pricing-label">ElevenLabs TTS</span>
+              <span class="pricing-value" style="color: var(--rose);">~$0.30</span>
+            </div>
+            <div class="pricing-row" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.75rem; margin-top: 0.25rem;">
+              <span class="pricing-label" style="font-weight: 600; color: #fff;">Cost to serve</span>
+              <span class="pricing-value" style="color: var(--rose);">~$1.60/mo</span>
+            </div>
+            <div class="pricing-row">
+              <span class="pricing-label" style="font-weight: 600; color: #fff;">Gross margin</span>
+              <span class="pricing-value" style="color: var(--green);">~89%</span>
+            </div>
+          </div>
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.35rem;">Expansion revenue</div>
+            <p style="font-size: 0.85rem; line-height: 1.4;">
+              Team/club plans ($25/user), coaching marketplace (coaches white-label the AI), race-specific training plans as one-time purchases.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 4: GO-TO-MARKET ===== -->
+  <div class="slide" data-pitch="pitch full">
+    <div class="slide-inner">
+      <div class="label">Go-to-Market Plan</div>
+      <h2>From <span class="highlight">Strava clubs</span> to coaching platform</h2>
+      <div class="two-col mt-2">
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">First 10 Customers</h3>
+            <p style="font-size: 0.85rem;">
+              Post in 5 local running club Strava groups (500+ members each). Offer free Pro for 3 months to the first 50 signups. We're already runners with active clubs in our network. Direct outreach to running group admins on Reddit r/running (2.5M members).
+            </p>
+          </div>
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Distribution Advantage</h3>
+            <p style="font-size: 0.85rem;">
+              <strong style="color: #fff;">Strava webhook = built-in viral loop.</strong> Every workout auto-triggers analysis. Users see value within 30 seconds of their first run. No onboarding friction -- connect Strava, done.
+              Share-worthy AI insights become organic social content.
+            </p>
+          </div>
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Why would they switch?</h3>
+            <p style="font-size: 0.85rem;">
+              They're not switching -- <strong style="color: #fff;">there's nothing to switch from.</strong> Strava shows data, we interpret it. We layer on top of their existing Strava workflow. Zero behavior change required.
+            </p>
+          </div>
+        </div>
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-elevated" style="padding: 1.25rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.75rem;">Growth Phases</div>
+            <div class="flex-col" style="gap: 0.6rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">1</div>
+                <div>
+                  <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">Month 1-3:</span>
+                  <span style="font-size: 0.85rem;"> Running clubs + Reddit outreach</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">2</div>
+                <div>
+                  <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">Month 3-6:</span>
+                  <span style="font-size: 0.85rem;"> Content marketing (AI analysis screenshots)</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">3</div>
+                <div>
+                  <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">Month 6-12:</span>
+                  <span style="font-size: 0.85rem;"> Coach partnerships + referral program</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">4</div>
+                <div>
+                  <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">Year 2:</span>
+                  <span style="font-size: 0.85rem;"> B2B (gyms, clubs, coaching platforms)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="glass-card" style="text-align: center; padding: 1rem;">
+            <div class="stat-value" style="font-size: 1.8rem; color: var(--green);">30 sec</div>
+            <div class="stat-label">Time to first value<br/>(connect Strava, finish a run, see analysis)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 5: WHY YOU / WHY NOW ===== -->
+  <div class="slide" data-pitch="pitch full">
+    <div class="slide-inner">
+      <div class="label">Why Us / Why Now</div>
+      <h2>Builders who <span class="highlight">run</span></h2>
+      <div class="two-col mt-2">
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">We are the users</h3>
+            <p style="font-size: 0.85rem;">
+              We're endurance athletes who got tired of staring at Strava charts and guessing what they mean. We built the coach we wished we had.
+            </p>
+          </div>
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Built to last</h3>
+            <p style="font-size: 0.85rem;">
+              Production-grade architecture from day one: CI/CD, test coverage, documentation. If this gets traction, we're ready to commit.
+            </p>
+          </div>
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
+            <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem;">Why now?</h3>
+            <p style="font-size: 0.85rem;">
+              Gemini 2.5 Flash makes structured coaching analysis fast and cheap ($0.01/workout). LangChain tool calling enables real agentic coaching. Strava's webhook API unlocks zero-click automation. This wasn't possible 12 months ago.
+            </p>
+          </div>
+        </div>
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-elevated" style="padding: 1.25rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.75rem;">Built with Cursor -- Compound Engineering</div>
+            <p style="font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); margin-bottom: 0.75rem;">
+              90%+ of this codebase was written by Cursor agents. Custom Eclipse framework with skills for implement, debug, test, deploy. Self-improving docs -- every correction updates the knowledge base.
+            </p>
+            <div class="flex-col" style="gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">1</div>
+                <span style="font-size: 0.8rem;">Human spots issue or pattern</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">2</div>
+                <span style="font-size: 0.8rem;">Agent updates documentation</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">3</div>
+                <span style="font-size: 0.8rem;">Future sessions avoid the issue</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="step-num">4</div>
+                <span style="font-size: 0.8rem;">Quality compounds over time</span>
+              </div>
+            </div>
+          </div>
+          <div class="glass-card" style="padding: 0.85rem 1.25rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.35rem;">The result</div>
+            <p style="font-size: 0.85rem; line-height: 1.4;">
+              Full-stack app built in a hackathon weekend -- backend, AI pipeline, dashboard, tests, deployment -- with quality that compounds instead of decaying.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 6: CTA (pitch closer) ===== -->
+  <div class="slide" data-pitch="pitch full">
+    <div class="slide-inner" style="text-align: center;">
+      <div class="label">Live Now</div>
+      <h1 style="margin-bottom: 1rem;">m<span class="highlight">AI</span>coach</h1>
+      <p class="subtitle" style="max-width: 550px; margin: 0 auto;">
+        Connect your Strava. Get AI coaching on every workout.<br/>
+        Talk to your coach in natural language.
+      </p>
+      <div style="margin-top: 2rem;">
+        <div class="glass-elevated" style="display: inline-block; padding: 1rem 2.5rem;">
+          <div style="font-size: 1.2rem; font-weight: 600; color: #fff;">maicoach.vercel.app</div>
+        </div>
+      </div>
+      <div class="grid-3 mt-3" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+        <div class="glass-card stat" style="padding: 1rem;">
+          <div class="stat-value" style="font-size: 1.8rem;">100%</div>
+          <div class="stat-label">Automated pipeline</div>
+        </div>
+        <div class="glass-card stat" style="padding: 1rem;">
+          <div class="stat-value" style="font-size: 1.8rem; color: var(--accent);">9</div>
+          <div class="stat-label">Agent tools</div>
+        </div>
+        <div class="glass-card stat" style="padding: 1rem;">
+          <div class="stat-value" style="font-size: 1.8rem; color: var(--green);">90%+</div>
+          <div class="stat-label">Cursor-written</div>
+        </div>
+      </div>
+      <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-dim);">
+        Team inv<span style="color: var(--accent); font-weight: 600;">AI</span>ders
+      </p>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- ===== EXTENDED SLIDES (full mode only -- for longer pitch) ===== -->
+  <!-- ================================================================ -->
+
+  <!-- ===== SLIDE 7: THE FLOW ===== -->
+  <div class="slide" data-pitch="full">
+    <div class="slide-inner">
+      <div class="label">How It Works</div>
+      <h2>From Strava upload to <span class="highlight">coaching insight</span></h2>
+      <div class="flow mt-3">
+        <div class="flow-node">
+          <div class="node-label">Athlete</div>
+          <div class="node-title">Strava Upload</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">
+          <div class="node-label">Vercel</div>
+          <div class="node-title">Webhook</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node active-node">
+          <div class="node-label">n8n</div>
+          <div class="node-title">Pipeline</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">
+          <div class="node-label">Google</div>
+          <div class="node-title">Gemini AI</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">
+          <div class="node-label">Backend</div>
+          <div class="node-title">Convex</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">
+          <div class="node-label">User</div>
+          <div class="node-title">Dashboard</div>
+        </div>
+      </div>
+      <div class="grid-3 mt-3">
+        <div class="glass-card">
+          <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem;">Step 1-2</div>
+          <h3 style="font-size: 0.95rem; margin-bottom: 0.4rem;">Capture</h3>
+          <p style="font-size: 0.8rem;">Strava webhook fires on activity create. Vercel API route validates &amp; forwards to n8n.</p>
+        </div>
+        <div class="glass-card">
+          <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem;">Step 3-4</div>
+          <h3 style="font-size: 0.95rem; margin-bottom: 0.4rem;">Analyze</h3>
+          <p style="font-size: 0.8rem;">n8n fetches activity + streams, downsamples to ~500 points, runs two-stage Gemini analysis.</p>
+        </div>
+        <div class="glass-card">
+          <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem;">Step 5-6</div>
+          <h3 style="font-size: 0.95rem; margin-bottom: 0.4rem;">Deliver</h3>
+          <p style="font-size: 0.8rem;">Results stored in Convex. Dashboard updates reactively in real-time. Coach agent has full context.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 8: n8n DEEP DIVE ===== -->
+  <div class="slide" data-pitch="full">
+    <div class="slide-inner">
+      <div class="label">Pipeline Deep Dive</div>
+      <h2>n8n: The <span class="highlight">orchestration engine</span></h2>
+      <div class="two-col mt-2">
+        <div class="flex-col" style="gap: 0; justify-content: center;">
+          <div class="pipeline-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>Webhook Receive</h4>
+              <p style="font-size: 0.8rem;">n8n webhook catches the forwarded Strava event with activity ID and athlete ID.</p>
+            </div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>Token Resolution</h4>
+              <p style="font-size: 0.8rem;">Calls Convex HTTP endpoint to fetch a fresh Strava access token. Auto-refreshes.</p>
+            </div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Fetch Activity + Streams</h4>
+              <p style="font-size: 0.8rem;">10 data stream types (HR, pace, elevation, cadence, GPS...) from Strava API v3.</p>
+            </div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <h4>Downsample (Code Node)</h4>
+              <p style="font-size: 0.8rem;">30s rolling window, targets ~500 points. Computes HR drift. Builds scout prompt.</p>
+            </div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <h4>Two-Stage Gemini Analysis</h4>
+              <p style="font-size: 0.8rem;">Scout classifies workout. Coach produces structured coaching JSON.</p>
+            </div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <h4>Store &amp; Complete</h4>
+              <p style="font-size: 0.8rem;">Analysis + streams persisted to Convex. Dashboard updates reactively.</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="padding: 0.75rem 1rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem;">Downsampling Logic</div>
+            <div class="code-block"><span class="cm">// Target ~500 points for any duration</span>
+<span class="kw">const</span> windowSec = <span class="fn">Math.max</span>(
+  <span class="str">30</span>, <span class="fn">Math.ceil</span>(durationSec / <span class="str">500</span>)
+);
+<span class="cm">// HR drift: aerobic decoupling signal</span>
+<span class="kw">const</span> drift = (avgLast - avgFirst) / avgFirst;</div>
+          </div>
+          <div class="glass-card" style="padding: 0.75rem 1rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem;">Two-Stage Prompt Strategy</div>
+            <div class="code-block"><span class="cm">// Stage 1: Scout (temp 0.2, 2K tokens)</span>
+<span class="accent">workoutClassification</span>, <span class="accent">keyObservations</span>
+<span class="accent">analysisDirectives</span>, <span class="accent">relevantFrameworks</span>
+
+<span class="cm">// Stage 2: Coach (temp 0.3, 4K tokens)</span>
+<span class="accent">effortScore</span>, <span class="accent">executiveSummary</span>
+<span class="accent">positives</span>, <span class="accent">improvements</span>
+<span class="accent">splitAnalysis</span>, <span class="accent">nextSession</span></div>
+          </div>
+          <div class="glass-card" style="padding: 0.75rem 1rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.35rem;">Why Two Stages?</div>
+            <p style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted);">
+              Scout narrows context before coach writes. Prevents generic advice. Pattern detection separated from actionable coaching.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 9: AGENTIC COACH DEEP DIVE ===== -->
+  <div class="slide" data-pitch="full">
+    <div class="slide-inner">
+      <div class="label">AI Coach Architecture</div>
+      <h2>Not a chatbot. An <span class="highlight">agent</span>.</h2>
+      <div class="two-col mt-2">
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <p style="font-size: 0.9rem; line-height: 1.6;">
+            The coach is a <strong style="color: #fff;">LangChain-powered agentic loop</strong> backed by Gemini 2.5 Flash.
+            It doesn't hallucinate numbers -- it queries real workout data through <strong style="color: #fff;">9 structured tools</strong> connected to Convex.
+          </p>
+          <div class="glass-card" style="padding: 0.75rem 1rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem;">Available Tools</div>
+            <div class="tool-grid">
+              <div class="tool-item"><div class="tool-dot"></div>getActivitySummary</div>
+              <div class="tool-item"><div class="tool-dot"></div>getDownsampledStreams</div>
+              <div class="tool-item"><div class="tool-dot"></div>getAthleteProfile</div>
+              <div class="tool-item"><div class="tool-dot"></div>getHeartRateZones</div>
+              <div class="tool-item"><div class="tool-dot"></div>getGearInfo</div>
+              <div class="tool-item"><div class="tool-dot"></div>getRecentActivities</div>
+              <div class="tool-item"><div class="tool-dot"></div>getFormSnapshot</div>
+              <div class="tool-item"><div class="tool-dot"></div>getExistingAnalysis</div>
+              <div class="tool-item"><div class="tool-dot" style="background: var(--green);"></div>getPreviousComparable</div>
+            </div>
+          </div>
+          <div class="glass-card" style="padding: 0.75rem 1rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.35rem;">Voice Input</div>
+            <p style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted);">
+              Browser Web Speech API captures spoken questions. Transcript auto-sends to the agentic pipeline. Hands-free coaching while cooling down.
+            </p>
+          </div>
+        </div>
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-elevated" style="padding: 1rem 1.25rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.75rem;">Agent Loop (up to 6 rounds)</div>
+            <div class="code-block" style="line-height: 1.7;"><span class="fn">User</span>: <span class="str">"How was my run?"</span>
+
+<span class="cm">// Round 1: Agent decides to use tools</span>
+<span class="fn">Agent</span> <span class="kw">calls</span> <span class="accent">getRecentActivities</span>()
+<span class="fn">Agent</span> <span class="kw">calls</span> <span class="accent">getActivitySummary</span>(id)
+
+<span class="cm">// Round 2: Needs stream data</span>
+<span class="fn">Agent</span> <span class="kw">calls</span> <span class="accent">getDownsampledStreams</span>(id)
+<span class="fn">Agent</span> <span class="kw">calls</span> <span class="accent">getHeartRateZones</span>()
+
+<span class="cm">// Round 3: Synthesize and respond</span>
+<span class="fn">Agent</span> <span class="kw">returns</span> <span class="str">coaching analysis</span></div>
+          </div>
+          <div class="glass-card" style="padding: 0.75rem 1rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.35rem;">Context Awareness</div>
+            <p style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted);">
+              The coach knows which page you're on. On the Workout tab? It defaults to your latest activity. On Week? It talks about your weekly load. On Form? It advises on recovery.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 10: ARCHITECTURE ===== -->
+  <div class="slide" data-pitch="full">
+    <div class="slide-inner">
+      <div class="label">Technical Architecture</div>
+      <h2>Full-stack <span class="highlight">reactive</span> system</h2>
+      <div class="grid-2 mt-2" style="gap: 1.5rem;">
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="border-left: 3px solid var(--accent); padding: 0.85rem 1.25rem;">
+            <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem;">Frontend -- Next.js 14</h3>
+            <p style="font-size: 0.8rem; line-height: 1.4;">
+              App Router. Server-side auth. Three dashboard tabs. Custom glassmorphism design system. Recharts. Pure Tailwind v4.
+            </p>
+          </div>
+          <div class="glass-card" style="border-left: 3px solid var(--green); padding: 0.85rem 1.25rem;">
+            <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem;">Backend -- Convex</h3>
+            <p style="font-size: 0.8rem; line-height: 1.4;">
+              Reactive real-time subscriptions. Dashboard updates the instant pipeline writes. Strava tokens server-side only. Schema-validated mutations.
+            </p>
+          </div>
+          <div class="glass-card" style="border-left: 3px solid var(--amber); padding: 0.85rem 1.25rem;">
+            <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem;">Orchestration -- n8n Cloud</h3>
+            <p style="font-size: 0.8rem; line-height: 1.4;">
+              Workflow-as-code: JSON in repo, deployed via REST API. Sync scripts for push/pull. Code nodes for downsampling + prompts.
+            </p>
+          </div>
+        </div>
+        <div class="flex-col" style="gap: 0.75rem; justify-content: center;">
+          <div class="glass-card" style="border-left: 3px solid var(--rose); padding: 0.85rem 1.25rem;">
+            <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem;">AI Layer -- Gemini</h3>
+            <p style="font-size: 0.8rem; line-height: 1.4;">
+              <strong style="color:#fff;">Gemini 2.0 Flash</strong> for pipeline analysis (structured JSON, low temp).
+              <strong style="color:#fff;">Gemini 2.5 Flash</strong> for interactive coach (LangChain tool calling).
+            </p>
+          </div>
+          <div class="glass-card" style="border-left: 3px solid var(--blue); padding: 0.85rem 1.25rem;">
+            <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem;">Data Source -- Strava API v3</h3>
+            <p style="font-size: 0.8rem; line-height: 1.4;">
+              OAuth 2.0 with auto token refresh. Webhook subscription for real-time events. 10 stream types per workout. Rate-limit aware.
+            </p>
+          </div>
+          <div class="glass-card" style="padding: 0.85rem 1.25rem;">
+            <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem;">Quality Gates</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              <span class="chip" style="font-size: 0.65rem;">ESLint strict</span>
+              <span class="chip" style="font-size: 0.65rem;">Prettier</span>
+              <span class="chip" style="font-size: 0.65rem;">TypeScript strict</span>
+              <span class="chip" style="font-size: 0.65rem;">Vitest 80%</span>
+              <span class="chip" style="font-size: 0.65rem;">Husky hooks</span>
+              <span class="chip" style="font-size: 0.65rem;">lint-staged</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 11: FINAL CTA ===== -->
+  <div class="slide" data-pitch="full">
+    <div class="slide-inner" style="text-align: center;">
+      <div class="label">Thank You</div>
+      <h1 style="margin-bottom: 0.75rem;">m<span class="highlight">AI</span>coach</h1>
+      <p class="subtitle" style="max-width: 500px; margin: 0 auto 2rem;">
+        AI coaching that starts when you stop running.
+      </p>
+      <div class="big-quote" style="margin: 0 auto 2.5rem; text-align: left;">
+        "What if every athlete had access to a coach who knows their entire training history,
+        analyzes every workout the moment it happens, and is always available to talk?"
+      </div>
+      <div class="glass-elevated" style="display: inline-block; padding: 1rem 2.5rem; margin-bottom: 1.5rem;">
+        <div style="font-size: 1.2rem; font-weight: 600; color: #fff;">maicoach.vercel.app</div>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-dim);">
+        Team inv<span style="color: var(--accent); font-weight: 600;">AI</span>ders &middot; Built with Cursor
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="prev()">&larr;</button>
+  <div class="nav-dots" id="navDots"></div>
+  <button class="nav-btn" id="nextBtn" onclick="next()">&rarr;</button>
+</div>
+
+<script>
+  let currentSlide = 0;
+  let mode = 'pitch';
+  const slides = Array.from(document.querySelectorAll('.slide'));
+
+  function getVisibleIndices() {
+    return slides.reduce((acc, s, i) => {
+      const pitches = s.dataset.pitch.split(' ');
+      if (pitches.includes(mode)) acc.push(i);
+      return acc;
+    }, []);
+  }
+
+  function render() {
+    const visible = getVisibleIndices();
+    const total = visible.length;
+    const activeGlobal = visible[currentSlide] ?? visible[0];
+
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'exit');
+      if (i === activeGlobal) {
+        s.classList.add('active');
+      } else if (i < activeGlobal) {
+        s.classList.add('exit');
+      }
+    });
+
+    document.getElementById('slideCounter').textContent =
+      `${currentSlide + 1} / ${total}`;
+
+    const dotsContainer = document.getElementById('navDots');
+    dotsContainer.innerHTML = '';
+    visible.forEach((globalIdx, localIdx) => {
+      const dot = document.createElement('button');
+      dot.className = 'nav-dot' + (localIdx === currentSlide ? ' active' : '');
+      dot.onclick = () => { currentSlide = localIdx; render(); };
+      dotsContainer.appendChild(dot);
+    });
+
+    document.getElementById('prevBtn').disabled = currentSlide === 0;
+    document.getElementById('nextBtn').disabled = currentSlide === total - 1;
+  }
+
+  function next() {
+    const total = getVisibleIndices().length;
+    if (currentSlide < total - 1) { currentSlide++; render(); }
+  }
+
+  function prev() {
+    if (currentSlide > 0) { currentSlide--; render(); }
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('modePitch').classList.toggle('active', m === 'pitch');
+    document.getElementById('modeFull').classList.toggle('active', m === 'full');
+
+    const visible = getVisibleIndices();
+    if (currentSlide >= visible.length) currentSlide = visible.length - 1;
+    render();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+    if (e.key === '1') setMode('pitch');
+    if (e.key === '2') setMode('full');
+  });
+
+  render();
+</script>
+
+</body>
+</html>

@@ -63,9 +63,9 @@ curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows"
 
 ### Vercel Deployment
 
-| Project      | Branch | URL                             |
-| ------------ | ------ | ------------------------------- |
-| `coachagent` | `main` | `https://coachagent.vercel.app` |
+| Project    | Branch | URL                           |
+| ---------- | ------ | ----------------------------- |
+| `maicoach` | `main` | `https://maicoach.vercel.app` |
 
 - **Team:** `lorenzohackathon-invaiders`
 - **Git Integration:** Auto-deploys on push to `main`
@@ -73,7 +73,7 @@ curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows"
 
 ### Strava Webhook
 
-- **Endpoint:** `https://coachagent.vercel.app/api/webhooks/strava`
+- **Endpoint:** `https://maicoach.vercel.app/api/webhooks/strava`
 - **Route:** `app/api/webhooks/strava/route.ts`
 - **Subscription ID:** `336243`
 - **Verify token:** stored in `STRAVA_WEBHOOK_VERIFY_TOKEN` env var
@@ -197,7 +197,7 @@ set -a && source .env.local && set +a
 curl -X POST https://www.strava.com/api/v3/push_subscriptions \
  -d "client_id=$STRAVA_CLIENT_ID" \
  -d "client_secret=$STRAVA_CLIENT_SECRET" \
- -d "callback_url=https://coachagent.vercel.app/api/webhooks/strava" \
+ -d "callback_url=https://maicoach.vercel.app/api/webhooks/strava" \
  -d "verify_token=$STRAVA_WEBHOOK_VERIFY_TOKEN"
 ```
 
@@ -230,7 +230,7 @@ curl -X DELETE "https://www.strava.com/api/v3/push_subscriptions/336243?client_i
 
 Eclipse Agentic Framework (v0.1.0). Skills: implement, debug, refactor,
 test, pr-review, create-prd, compound, audit-docs, resolve-pr-feedback,
-research, **n8n-workflow**, **vercel-runtime-logs**.
+research, **n8n-workflow**, **vercel-runtime-logs**, **strava-manual-sync**.
 
 <!-- convex-ai-start -->
 

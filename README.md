@@ -122,7 +122,7 @@ Visit `http://localhost:3000` and click **"Connect with Strava"**. The OAuth flo
 
 ### Production Callback Domain
 
-When deploying to Vercel, update the **Authorization Callback Domain** on your Strava API app to your production domain (e.g. `coachagent.vercel.app`) and set `STRAVA_REDIRECT_URI` accordingly.
+When deploying to Vercel, update the **Authorization Callback Domain** on your Strava API app to your production domain (e.g. `maicoach.vercel.app`) and set `STRAVA_REDIRECT_URI` accordingly.
 
 ## Environment Variables Reference
 
