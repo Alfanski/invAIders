@@ -35,11 +35,11 @@ _Add further design docs as `docs/design/DD-NNN-title.md`._
 
 ## Infrastructure
 
-| Component             | Details                                                                  |
-| --------------------- | ------------------------------------------------------------------------ |
-| Vercel (`coachagent`) | Main app, deploys from `main`                                            |
-| Strava Webhook        | Subscription ID `336243`, endpoint at `/api/webhooks/strava`             |
-| n8n Cloud             | `https://lorenzo-hackathon.app.n8n.cloud`, workflows in `n8n/workflows/` |
+| Component           | Details                                                                  |
+| ------------------- | ------------------------------------------------------------------------ |
+| Vercel (`maicoach`) | Main app, auto-deploys from `main` via Git Integration                   |
+| Strava Webhook      | Subscription ID `336243`, endpoint at `/api/webhooks/strava`             |
+| n8n Cloud           | `https://lorenzo-hackathon.app.n8n.cloud`, workflows in `n8n/workflows/` |
 
 See [AGENTS.md](../AGENTS.md) for full Vercel project details, Strava API commands, and env var setup.
 
