@@ -74,12 +74,30 @@ function formatPaceValue(secPerKm: number): string {
   return `${String(m)}:${s.toString().padStart(2, '0')} /km`;
 }
 
+function formatPaceTick(secPerKm: number): string {
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return `${String(m)}:${s.toString().padStart(2, '0')}`;
+}
+
 const CHART_CONFIGS: Record<
   string,
-  { color: string; unit: string; invertY?: boolean; formatValue?: (v: number) => string }
+  {
+    color: string;
+    unit: string;
+    invertY?: boolean;
+    formatValue?: (v: number) => string;
+    formatTick?: (v: number) => string;
+  }
 > = {
   heartRate: { color: '#f87171', unit: 'bpm' },
-  pace: { color: '#34d399', unit: '/km', invertY: true, formatValue: formatPaceValue },
+  pace: {
+    color: '#34d399',
+    unit: '/km',
+    invertY: true,
+    formatValue: formatPaceValue,
+    formatTick: formatPaceTick,
+  },
   elevation: { color: '#60a5fa', unit: 'm' },
   cadence: { color: '#fbbf24', unit: 'rpm' },
 };
@@ -259,6 +277,7 @@ export function WorkoutView({
                   label={active.label}
                   unit={config.unit}
                   {...(config.formatValue !== undefined ? { formatValue: config.formatValue } : {})}
+                  {...(config.formatTick !== undefined ? { formatTick: config.formatTick } : {})}
                   {...(config.invertY !== undefined ? { invertY: config.invertY } : {})}
                 />
               </div>

@@ -12,6 +12,7 @@ interface MetricChartProps {
   label: string;
   unit: string;
   formatValue?: ((value: number) => string) | undefined;
+  formatTick?: ((value: number) => string) | undefined;
   invertY?: boolean | undefined;
 }
 
@@ -58,6 +59,7 @@ export function MetricChart({
   label,
   unit,
   formatValue,
+  formatTick,
   invertY = false,
 }: Readonly<MetricChartProps>): ReactNode {
   const data = stream.map((p) => ({ timeSec: p.timeSec, value: p.value }));
@@ -83,7 +85,7 @@ export function MetricChart({
 
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+          <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
             <defs>
               <linearGradient id={`gradient-${label}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={color} stopOpacity={0.3} />
@@ -104,7 +106,10 @@ export function MetricChart({
               tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v: number) => (formatValue ? formatValue(v) : String(Math.round(v)))}
+              tickFormatter={(v: number) =>
+                formatTick ? formatTick(v) : formatValue ? formatValue(v) : String(Math.round(v))
+              }
+              {...(formatTick ? { width: 48 } : {})}
             />
             <Tooltip
               content={<ChartTooltip unit={unit} formatValue={formatValue} />}
