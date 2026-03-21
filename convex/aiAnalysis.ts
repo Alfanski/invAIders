@@ -209,6 +209,34 @@ ${lastActivity?.trimp ? `- Last activity TRIMP: ${String(Math.round(lastActivity
   },
 });
 
+export const generateWeeklySummaryForAll = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const athletes = await ctx.runQuery(internal.athletes.listAllInternal, {});
+    for (const athlete of athletes) {
+      if (athlete.formBackfillStatus !== 'complete') continue;
+      await ctx.scheduler.runAfter(0, internal.aiAnalysis.generateWeeklySummary, {
+        athleteId: athlete._id,
+      });
+    }
+    console.log(`[cron] Scheduled weekly summaries for ${String(athletes.length)} athletes`);
+  },
+});
+
+export const generateDailyPlanForAll = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const athletes = await ctx.runQuery(internal.athletes.listAllInternal, {});
+    for (const athlete of athletes) {
+      if (athlete.formBackfillStatus !== 'complete') continue;
+      await ctx.scheduler.runAfter(0, internal.aiAnalysis.generateDailyPlan, {
+        athleteId: athlete._id,
+      });
+    }
+    console.log(`[cron] Scheduled daily plans for ${String(athletes.length)} athletes`);
+  },
+});
+
 export const coachChat = action({
   args: {
     athleteId: v.id('athletes'),

@@ -21,6 +21,7 @@ import { computeActivityTrimp } from './lib/trimp';
 
 const TOKEN_REFRESH_BUFFER_SEC = 300;
 const MAX_BACKFILL_PAGES = 5;
+const MAX_BACKFILL_ANALYSIS = 5;
 
 // ---------------------------------------------------------------------------
 // Token refresh helper
@@ -115,7 +116,7 @@ function buildActivityArgs(
     ...(activity.splits_metric ? { splitsMetric: activity.splits_metric } : {}),
     ...(activity.laps ? { laps: activity.laps } : {}),
     trimp,
-    processingStatus: 'complete' as const,
+    processingStatus: 'received' as const,
   };
 }
 
@@ -182,11 +183,13 @@ export const backfillHistory = internalAction({
         if (startEpoch > maxStartEpoch) maxStartEpoch = startEpoch;
       }
 
+      const insertedActivityIds: Id<'activities'>[] = [];
       for (const activity of newActivities) {
-        await ctx.runMutation(
+        const activityId = await ctx.runMutation(
           internal.activities.upsertFromStrava,
           buildActivityArgs(args.athleteId, activity, athleteProfile),
         );
+        insertedActivityIds.push(activityId);
       }
 
       await ctx.runMutation(internal.stravaPollState.update, {
@@ -220,13 +223,26 @@ export const backfillHistory = internalAction({
         athleteId: args.athleteId,
       });
 
+      // Trigger AI analysis for the most recent activities
+      const recentIds = insertedActivityIds.slice(0, MAX_BACKFILL_ANALYSIS);
+      for (const activityId of recentIds) {
+        await ctx.scheduler.runAfter(
+          ANALYSIS_DELAY_MS,
+          internal.stravaSync.triggerWorkoutAnalysis,
+          {
+            activityId,
+            athleteId: args.athleteId,
+          },
+        );
+      }
+
       await ctx.runMutation(internal.athletes.updateBackfillStatus, {
         athleteId: args.athleteId,
         status: 'complete',
       });
 
       console.log(
-        `Backfill: ${String(newActivities.length)} new of ${String(allActivities.length)} total for ${args.athleteId}`,
+        `Backfill: ${String(insertedActivityIds.length)} new of ${String(allActivities.length)} total for ${args.athleteId}, scheduling analysis for ${String(recentIds.length)} recent`,
       );
     } catch (err) {
       await ctx.runMutation(internal.athletes.updateBackfillStatus, {
@@ -280,6 +296,64 @@ export const computeFormSnapshots = internalAction({
     }
 
     console.log(`Computed ${String(series.length)} form snapshots for athlete ${args.athleteId}`);
+  },
+});
+
+// ---------------------------------------------------------------------------
+// triggerWorkoutAnalysis: POST to the LangChain analysis route.
+// Analysis is handled by the Next.js API route or the n8n pipeline.
+// ---------------------------------------------------------------------------
+
+const ANALYSIS_DELAY_MS = 5_000;
+
+export const triggerWorkoutAnalysis = internalAction({
+  args: {
+    activityId: v.id('activities'),
+    athleteId: v.id('athletes'),
+  },
+  handler: async (ctx, args) => {
+    const appUrl = process.env['APP_URL'];
+
+    if (!appUrl) {
+      console.warn(
+        `[trigger] APP_URL not set, skipping analysis trigger for ${args.activityId}. ` +
+          'Set APP_URL env var to enable LangChain analysis, or use the n8n pipeline.',
+      );
+      return;
+    }
+
+    const token = process.env['INTERNAL_API_TOKEN'] ?? '';
+    const url = `${appUrl}/api/ai/analyze-workout`;
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          activityId: args.activityId,
+          athleteId: args.athleteId,
+        }),
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as { status?: string; analysisId?: string };
+        console.log(
+          `[trigger] LangChain analysis complete for ${args.activityId}: ${data.analysisId ?? 'no-id'}`,
+        );
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.warn(
+          `[trigger] LangChain route returned ${String(res.status)} for ${args.activityId}: ${errText.slice(0, 200)}`,
+        );
+      }
+    } catch (err) {
+      console.error(
+        `[trigger] HTTP call failed for ${args.activityId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   },
 });
 
@@ -348,16 +422,16 @@ async function pollForAthlete(ctx: ActionCtx, athleteId: Id<'athletes'>): Promis
   };
 
   let maxStartEpoch = after;
-  let inserted = 0;
+  const insertedActivityIds: Id<'activities'>[] = [];
 
   for (const activity of activities) {
     if (existingIds.has(String(activity.id))) continue;
 
-    await ctx.runMutation(
+    const activityId = await ctx.runMutation(
       internal.activities.upsertFromStrava,
       buildActivityArgs(athleteId, activity, athleteProfile),
     );
-    inserted++;
+    insertedActivityIds.push(activityId);
 
     const startEpoch = Math.floor(new Date(activity.start_date).getTime() / 1000);
     if (startEpoch > maxStartEpoch) maxStartEpoch = startEpoch;
@@ -369,9 +443,18 @@ async function pollForAthlete(ctx: ActionCtx, athleteId: Id<'athletes'>): Promis
     lastPollAt: Math.floor(Date.now() / 1000),
   });
 
-  if (inserted > 0) {
-    console.log(`Poll: inserted ${String(inserted)} new activities for ${athleteId}`);
+  if (insertedActivityIds.length > 0) {
+    console.log(
+      `Poll: inserted ${String(insertedActivityIds.length)} new activities for ${athleteId}`,
+    );
     await ctx.scheduler.runAfter(0, internal.stravaSync.computeFormSnapshots, { athleteId });
+
+    for (const activityId of insertedActivityIds) {
+      await ctx.scheduler.runAfter(ANALYSIS_DELAY_MS, internal.stravaSync.triggerWorkoutAnalysis, {
+        activityId,
+        athleteId,
+      });
+    }
   }
 
   return false;

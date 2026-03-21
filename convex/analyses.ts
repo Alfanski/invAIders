@@ -60,6 +60,21 @@ export const getForActivity = query({
   },
 });
 
+export const setProcessingStatus = action({
+  args: {
+    activityId: v.id('activities'),
+    processingStatus: v.union(v.literal('analyzing'), v.literal('complete'), v.literal('error')),
+    processingError: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.runMutation(internal.activities.updateStatus, {
+      activityId: args.activityId,
+      processingStatus: args.processingStatus,
+      ...(args.processingError !== undefined ? { processingError: args.processingError } : {}),
+    });
+  },
+});
+
 export const saveFromAgent = action({
   args: {
     activityId: v.id('activities'),

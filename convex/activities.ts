@@ -244,3 +244,37 @@ export const getRecentForAthlete = query({
     }));
   },
 });
+
+export const getPreviousComparable = query({
+  args: {
+    athleteId: v.id('athletes'),
+    sportType: v.string(),
+    beforeDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const activities = await ctx.db
+      .query('activities')
+      .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
+      .order('desc')
+      .take(50);
+
+    const match = activities.find(
+      (a) => a.sportType === args.sportType && a.startDate < args.beforeDate,
+    );
+    if (!match) return null;
+
+    return {
+      _id: match._id,
+      name: match.name,
+      sportType: match.sportType,
+      startDate: match.startDate,
+      distanceMeters: match.distanceMeters,
+      movingTimeSec: match.movingTimeSec,
+      averageHeartrate: match.averageHeartrate,
+      maxHeartrate: match.maxHeartrate,
+      averageCadence: match.averageCadence,
+      totalElevationGainM: match.totalElevationGainM,
+      trimp: match.trimp,
+    };
+  },
+});

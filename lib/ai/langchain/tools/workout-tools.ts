@@ -144,6 +144,69 @@ export const getRecentActivities = tool(
   },
 );
 
+export const getFormSnapshot = tool(
+  async ({ athleteId, date }) => {
+    const convex = getConvexClient();
+    const snapshot = await convex.query(api.formSnapshots.getForAthleteDate, {
+      athleteId: athleteId as Id<'athletes'>,
+      date,
+    });
+    if (!snapshot) return JSON.stringify({ error: 'No form snapshot for this date' });
+    return JSON.stringify(snapshot);
+  },
+  {
+    name: 'getFormSnapshot',
+    description:
+      'Retrieve the training form snapshot (CTL, ATL, TSB, ACWR) for an athlete on a specific date. Use the activity start date to get form context at the time of the workout.',
+    schema: z.object({
+      athleteId: z.string().describe('The Convex athlete document ID'),
+      date: z.string().describe('Date string in YYYY-MM-DD format'),
+    }),
+  },
+);
+
+export const getExistingAnalysis = tool(
+  async ({ activityId }) => {
+    const convex = getConvexClient();
+    const analysis = await convex.query(api.analyses.getForActivity, {
+      activityId: activityId as Id<'activities'>,
+    });
+    if (!analysis) return JSON.stringify({ error: 'No existing analysis for this activity' });
+    return JSON.stringify(analysis);
+  },
+  {
+    name: 'getExistingAnalysis',
+    description:
+      'Check if a previous AI analysis already exists for this activity. Useful to avoid re-analyzing or to compare with a new analysis.',
+    schema: z.object({
+      activityId: z.string().describe('The Convex activity document ID'),
+    }),
+  },
+);
+
+export const getPreviousComparableActivity = tool(
+  async ({ athleteId, sportType, beforeDate }) => {
+    const convex = getConvexClient();
+    const activity = await convex.query(api.activities.getPreviousComparable, {
+      athleteId: athleteId as Id<'athletes'>,
+      sportType,
+      beforeDate,
+    });
+    if (!activity) return JSON.stringify({ error: 'No previous comparable activity found' });
+    return JSON.stringify(activity);
+  },
+  {
+    name: 'getPreviousComparableActivity',
+    description:
+      'Find the most recent activity of the same sport type before a given date. Useful for comparing performance progression.',
+    schema: z.object({
+      athleteId: z.string().describe('The Convex athlete document ID'),
+      sportType: z.string().describe('The sport type to match (e.g. "Run", "Ride")'),
+      beforeDate: z.string().describe('ISO date string -- find activities before this date'),
+    }),
+  },
+);
+
 export function getAllWorkoutTools(): StructuredToolInterface[] {
   return [
     getActivitySummary,
@@ -152,5 +215,8 @@ export function getAllWorkoutTools(): StructuredToolInterface[] {
     getHeartRateZones,
     getGearInfo,
     getRecentActivities,
+    getFormSnapshot,
+    getExistingAnalysis,
+    getPreviousComparableActivity,
   ];
 }

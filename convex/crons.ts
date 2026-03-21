@@ -10,4 +10,16 @@ crons.interval(
   internal.stravaSync.pollNewActivities,
 );
 
+crons.daily(
+  'generate daily training plans',
+  { hourUTC: 5, minuteUTC: 0 },
+  internal.aiAnalysis.generateDailyPlanForAll,
+);
+
+crons.weekly(
+  'generate weekly training summaries',
+  { dayOfWeek: 'monday', hourUTC: 6, minuteUTC: 0 },
+  internal.aiAnalysis.generateWeeklySummaryForAll,
+);
+
 export default crons;

@@ -17,92 +17,6 @@ import { RecoveryIndicator } from '@/components/form/recovery-indicator';
 import { useSession } from '@/components/providers/session-provider';
 import type { DailyFormPoint } from '@/types/form';
 
-interface ActivityDoc {
-  startDate: string;
-  movingTimeSec: number;
-  trimp?: number;
-  sufferScore?: number;
-}
-
-function buildFormData(activities: readonly ActivityDoc[]): {
-  series: DailyFormPoint[];
-  current: DailyFormPoint;
-  trend7d: { ctl: number; atl: number; tsb: number };
-  hoursSinceLastActivity: number;
-  lastActivityTrimp: number;
-} | null {
-  if (activities.length === 0) return null;
-
-  const sorted = [...activities].sort(
-    (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-  );
-
-  const first = sorted[0];
-  if (!first) return null;
-  const earliest = new Date(first.startDate);
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-
-  const trimpByDate = new Map<string, number>();
-  for (const a of sorted) {
-    const dateKey = a.startDate.slice(0, 10);
-    const trimp = a.trimp ?? a.sufferScore ?? estimateTrimp(a.movingTimeSec);
-    trimpByDate.set(dateKey, (trimpByDate.get(dateKey) ?? 0) + trimp);
-  }
-
-  const dailyTrimps: number[] = [];
-  const dates: string[] = [];
-  const cursor = new Date(earliest);
-  cursor.setHours(0, 0, 0, 0);
-
-  while (cursor <= today) {
-    const key = cursor.toISOString().slice(0, 10);
-    dates.push(key);
-    dailyTrimps.push(trimpByDate.get(key) ?? 0);
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
-  if (dailyTrimps.length === 0) return null;
-
-  const engine = getCoachingEngine();
-  const snapshots = engine.projectSeries(dailyTrimps);
-
-  const series: DailyFormPoint[] = snapshots.map((snap, i) => ({
-    date: dates[i] ?? '',
-    trimp: dailyTrimps[i] ?? 0,
-    hasActivity: (dailyTrimps[i] ?? 0) > 0,
-    ctl: Math.round(snap.ctl * 10) / 10,
-    atl: Math.round(snap.atl * 10) / 10,
-    tsb: Math.round(snap.tsb * 10) / 10,
-  }));
-
-  const current = series[series.length - 1];
-  if (!current) return null;
-  const weekAgo = series[Math.max(0, series.length - 8)] ?? current;
-
-  const lastActivity = sorted[sorted.length - 1];
-  if (!lastActivity) return null;
-  const hoursSince = (Date.now() - new Date(lastActivity.startDate).getTime()) / (1000 * 60 * 60);
-  const lastTrimp =
-    lastActivity.trimp ?? lastActivity.sufferScore ?? estimateTrimp(lastActivity.movingTimeSec);
-
-  return {
-    series,
-    current,
-    trend7d: {
-      ctl: Math.round((current.ctl - weekAgo.ctl) * 10) / 10,
-      atl: Math.round((current.atl - weekAgo.atl) * 10) / 10,
-      tsb: Math.round((current.tsb - weekAgo.tsb) * 10) / 10,
-    },
-    hoursSinceLastActivity: hoursSince,
-    lastActivityTrimp: lastTrimp,
-  };
-}
-
-function estimateTrimp(movingTimeSec: number): number {
-  return Math.round((movingTimeSec / 60) * 1.2);
-}
-
 export default function FormPage(): ReactNode {
   const session = useSession();
 
@@ -112,16 +26,53 @@ export default function FormPage(): ReactNode {
 }
 
 function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
-  const activities = useQuery(api.activities.listRecentForAthlete, { athleteId, limit: 200 });
+  const formSnapshots = useQuery(api.formSnapshots.listForAthlete, { athleteId, limit: 200 });
+  const activities = useQuery(api.activities.listRecentForAthlete, { athleteId, limit: 10 });
   const dailyPlan = useQuery(api.formAssessments.getLatestForAthlete, { athleteId });
-  const latestFormSnapshot = useQuery(api.formSnapshots.getLatestForAthlete, { athleteId });
 
   const formData = useMemo(() => {
-    if (!activities) return null;
-    return buildFormData(activities);
+    if (!formSnapshots || formSnapshots.length === 0) return null;
+
+    const sorted = [...formSnapshots].sort((a, b) => a.date.localeCompare(b.date));
+
+    const series: DailyFormPoint[] = sorted.map((snap) => ({
+      date: snap.date,
+      trimp: snap.dailyTrimp ?? 0,
+      hasActivity: (snap.dailyTrimp ?? 0) > 0,
+      ctl: snap.ctl,
+      atl: snap.atl,
+      tsb: snap.tsb,
+    }));
+
+    const current = series[series.length - 1];
+    if (!current) return null;
+
+    const weekAgo = series[Math.max(0, series.length - 8)] ?? current;
+
+    return {
+      series,
+      current,
+      trend7d: {
+        ctl: Math.round((current.ctl - weekAgo.ctl) * 10) / 10,
+        atl: Math.round((current.atl - weekAgo.atl) * 10) / 10,
+        tsb: Math.round((current.tsb - weekAgo.tsb) * 10) / 10,
+      },
+    };
+  }, [formSnapshots]);
+
+  const recoveryData = useMemo(() => {
+    if (!activities || activities.length === 0) return null;
+
+    const lastActivity = activities[0];
+    if (!lastActivity) return null;
+
+    const hoursSince = (Date.now() - new Date(lastActivity.startDate).getTime()) / (1000 * 60 * 60);
+    const lastTrimp = lastActivity.trimp ?? lastActivity.sufferScore ?? 0;
+
+    return { hoursSince, lastTrimp };
   }, [activities]);
 
-  if (activities === undefined) return <LoadingSkeleton />;
+  if (formSnapshots === undefined || activities === undefined) return <LoadingSkeleton />;
 
   if (!formData) {
     return (
@@ -135,18 +86,14 @@ function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
   const engine = getCoachingEngine();
   const zone = engine.classifyForm(formData.current.tsb);
 
-  const formSignals = latestFormSnapshot
-    ? {
-        tsb: latestFormSnapshot.tsb,
-        ...(latestFormSnapshot.acwr != null ? { acwr: latestFormSnapshot.acwr } : {}),
-      }
-    : { tsb: formData.current.tsb };
+  const formSignals = {
+    tsb: formData.current.tsb,
+    ...(formSnapshots[0]?.acwr != null ? { acwr: formSnapshots[0].acwr } : {}),
+  };
 
-  const recovery = computeRecovery(
-    formData.hoursSinceLastActivity,
-    formData.lastActivityTrimp,
-    formSignals,
-  );
+  const recovery = recoveryData
+    ? computeRecovery(recoveryData.hoursSince, recoveryData.lastTrimp, formSignals)
+    : computeRecovery(999, 0, formSignals);
 
   const hasPlan = dailyPlan?.executiveSummary && dailyPlan.executiveSummary.length > 0;
 
@@ -198,7 +145,7 @@ function FormContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
               </>
             ) : (
               <p className="mt-1.5 text-sm leading-relaxed text-glass-text-muted">
-                AI-powered daily recommendations will appear once the coaching pipeline is active.
+                Daily recommendations will appear once the coaching pipeline processes your data.
               </p>
             )}
           </div>

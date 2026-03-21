@@ -69,3 +69,13 @@ export const getLatestForAthlete = query({
       .first();
   },
 });
+
+export const getForAthleteDate = query({
+  args: { athleteId: v.id('athletes'), date: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('formSnapshots')
+      .withIndex('by_athlete_date', (q) => q.eq('athleteId', args.athleteId).eq('date', args.date))
+      .unique();
+  },
+});

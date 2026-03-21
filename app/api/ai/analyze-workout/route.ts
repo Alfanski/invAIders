@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { runWorkoutAgent } from '@/lib/ai/langchain/runWorkoutAgent';
+import type { AgentErrorCode } from '@/lib/ai/langchain/runWorkoutAgent';
 
 export const maxDuration = 120;
 
@@ -17,6 +18,25 @@ function getConvexClient(): ConvexHttpClient {
   const url = process.env['CONVEX_URL'];
   if (!url) throw new Error('CONVEX_URL is not set');
   return new ConvexHttpClient(url);
+}
+
+async function setActivityStatus(
+  convex: ConvexHttpClient,
+  activityId: Id<'activities'>,
+  status: 'analyzing' | 'complete' | 'error',
+  error?: string,
+): Promise<void> {
+  try {
+    await convex.action(api.analyses.setProcessingStatus, {
+      activityId,
+      processingStatus: status,
+      ...(error ? { processingError: error.slice(0, 500) } : {}),
+    });
+  } catch (err) {
+    console.warn(
+      `[analyze-workout] Failed to set status=${status}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -41,6 +61,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const convex = getConvexClient();
+  const typedActivityId = activityId as Id<'activities'>;
+
+  await setActivityStatus(convex, typedActivityId, 'analyzing');
 
   let athleteName: string | undefined;
   let athleteGoal: string | undefined;
@@ -70,9 +93,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
 
   if (!result.ok) {
-    console.error(`[analyze-workout] Agent error: ${result.error.message} (${result.error.phase})`);
+    const errorCode: AgentErrorCode = result.error.code;
+    console.error(
+      `[analyze-workout] Agent error: code=${errorCode} phase=${result.error.phase} msg=${result.error.message}`,
+    );
+
+    await setActivityStatus(
+      convex,
+      typedActivityId,
+      'error',
+      `${errorCode}: ${result.error.message}`,
+    );
+
     return NextResponse.json(
-      { error: 'analysis_failed', message: result.error.message },
+      { error: errorCode, message: result.error.message, phase: result.error.phase },
       { status: 500 },
     );
   }
@@ -84,7 +118,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // eslint-disable-next-line @typescript-eslint/dot-notation
     const saveResult = await convex.action(api['analyses']['saveFromAgent'], {
-      activityId: activityId as Id<'activities'>,
+      activityId: typedActivityId,
       model: 'gemini-2.5-flash',
       effortScore: result.data.analysis.effortScore,
       executiveSummary: result.data.analysis.executiveSummary,
@@ -107,18 +141,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         : {}),
     });
 
+    await setActivityStatus(convex, typedActivityId, 'complete');
+
     return NextResponse.json({
       status: 'ok',
       analysisId: (saveResult as { analysisId: string }).analysisId,
       analysis: result.data.analysis,
+      meta: {
+        toolCalls: result.data.toolCallCount,
+        rounds: result.data.rounds,
+        model: 'gemini-2.5-flash',
+      },
     });
   } catch (err) {
     console.error('[analyze-workout] Failed to save analysis:', err);
-    return NextResponse.json({
-      status: 'ok',
-      analysisId: null,
-      analysis: result.data.analysis,
-      warning: 'Analysis generated but failed to persist',
-    });
+    await setActivityStatus(
+      convex,
+      typedActivityId,
+      'error',
+      `save_failed: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500),
+    );
+    return NextResponse.json(
+      {
+        error: 'save_failed',
+        message: 'Analysis generated but failed to persist',
+        analysis: result.data.analysis,
+      },
+      { status: 500 },
+    );
   }
 }
