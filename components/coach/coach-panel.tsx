@@ -1,19 +1,48 @@
 'use client';
 
-import { useAction } from 'convex/react';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode, SyntheticEvent } from 'react';
 
-import { api } from '@/convex/_generated/api';
-import type { Id } from '@/convex/_generated/dataModel';
 import { getSuggestionsForRoute, getRouteContext } from '@/lib/coach/context-suggestions';
-import { generateCoachResponse } from '@/lib/coach/mock-responses';
 import { useVoiceInput } from '@/lib/coach/use-voice-input';
-import { useSession } from '@/components/providers/session-provider';
 
 import { useCoach } from './coach-provider';
 import type { CoachMessage } from './coach-provider';
+
+interface CoachChatResponse {
+  message: string;
+  toolCallCount: number;
+}
+
+async function sendToCoachAPI(
+  message: string,
+  history: readonly CoachMessage[],
+  route: string,
+  routeDescription: string,
+): Promise<string> {
+  const res = await fetch('/api/ai/coach-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      history: history.map((m) => ({ role: m.role, text: m.text })),
+      context: { route, routeDescription },
+    }),
+  });
+
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    throw new Error(
+      typeof err['message'] === 'string'
+        ? err['message']
+        : `Coach API error (${String(res.status)})`,
+    );
+  }
+
+  const data = (await res.json()) as CoachChatResponse;
+  return data.message;
+}
 
 export function CoachPanel(): ReactNode {
   const { isOpen, close, messages, addUserMessage, addCoachMessage, isProcessing, setProcessing } =
@@ -21,8 +50,6 @@ export function CoachPanel(): ReactNode {
   const pathname = usePathname();
   const suggestions = getSuggestionsForRoute(pathname);
   const routeContext = getRouteContext(pathname);
-  const session = useSession();
-  const coachChat = useAction(api.aiAnalysis.coachChat);
   const {
     isSupported,
     isListening,
@@ -33,6 +60,7 @@ export function CoachPanel(): ReactNode {
     resetTranscript,
   } = useVoiceInput();
   const [chatInput, setChatInput] = useState('');
+  const [chatError, setChatError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevTranscriptRef = useRef('');
 
@@ -41,22 +69,27 @@ export function CoachPanel(): ReactNode {
       if (!text.trim() || isProcessing) return;
       addUserMessage(text.trim());
       setProcessing(true);
+      setChatError(null);
       try {
-        if (session?.athleteId) {
-          const result = await coachChat({
-            athleteId: session.athleteId as Id<'athletes'>,
-            message: text.trim(),
-          });
-          addCoachMessage(result.response);
-        } else {
-          const response = await generateCoachResponse(text);
-          addCoachMessage(response);
-        }
+        const response = await sendToCoachAPI(text.trim(), messages, pathname, routeContext);
+        addCoachMessage(response);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Something went wrong';
+        setChatError(msg);
+        addCoachMessage('Sorry, I had trouble processing that. Please try again.');
       } finally {
         setProcessing(false);
       }
     },
-    [addUserMessage, addCoachMessage, isProcessing, setProcessing, session, coachChat],
+    [
+      addUserMessage,
+      addCoachMessage,
+      isProcessing,
+      setProcessing,
+      messages,
+      pathname,
+      routeContext,
+    ],
   );
 
   useEffect(() => {
@@ -185,6 +218,11 @@ export function CoachPanel(): ReactNode {
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
             </div>
             Thinking...
+          </div>
+        )}
+        {chatError && !isProcessing && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+            {chatError}
           </div>
         )}
         <div ref={messagesEndRef} />
