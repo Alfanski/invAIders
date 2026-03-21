@@ -87,7 +87,7 @@
   --chart-bar-empty: rgba(255, 255, 255, 0.05);
 
   --mesh-opacity: 0.25;
-  --map-tile-filter: brightness(1.6) saturate(0.9);
+  --map-tile-filter: invert(1) hue-rotate(180deg) brightness(1.5) contrast(0.9);
 
   color-scheme: dark;
 }
