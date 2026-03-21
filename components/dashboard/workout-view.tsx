@@ -17,6 +17,7 @@ import type {
 } from '@/types/dashboard';
 
 import { CoachingBreakdown } from './coaching-breakdown';
+import { GearCard } from './gear-card';
 import { MetricCard } from './metric-card';
 import { MetricChart } from './metric-chart';
 import { RouteMap } from './route-map';
@@ -37,6 +38,16 @@ interface WorkoutViewProps {
   heartRateZones?: readonly HeartRateZone[] | undefined;
   heartRateStream?: readonly number[] | undefined;
   streamsLoading?: boolean | undefined;
+  gear?:
+    | {
+        name: string;
+        gearType: 'shoe' | 'bike' | 'other';
+        distanceKm: number;
+        brandName?: string | null;
+        modelName?: string | null;
+      }
+    | null
+    | undefined;
 }
 
 function computeSummary(stream: readonly StreamPoint[]): StreamSummary {
@@ -87,6 +98,7 @@ export function WorkoutView({
   heartRateZones,
   heartRateStream,
   streamsLoading = false,
+  gear,
 }: Readonly<WorkoutViewProps>): ReactNode {
   const [expandedMetric, setExpandedMetric] = useState<MetricKey | null>(null);
 
@@ -272,6 +284,17 @@ export function WorkoutView({
       {/* GPS route map + elevation profile */}
       {latlng && latlng.length > 1 && (
         <RouteMap latlng={latlng} altitude={altitude} distance={distance} />
+      )}
+
+      {/* Gear */}
+      {gear && (
+        <GearCard
+          name={gear.name}
+          gearType={gear.gearType}
+          distanceKm={gear.distanceKm}
+          brandName={gear.brandName}
+          modelName={gear.modelName}
+        />
       )}
 
       {/* Temperature as subtle footer detail */}

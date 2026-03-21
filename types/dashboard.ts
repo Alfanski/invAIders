@@ -92,6 +92,7 @@ export interface DaySummary {
   dayShort: string;
   date: string;
   hasActivity: boolean;
+  activityId?: string | undefined;
   activityType?: string | undefined;
   activityName?: string | undefined;
   distanceKm?: number | undefined;
@@ -103,17 +104,20 @@ export interface DaySummary {
   effort?: number | undefined;
 }
 
+export interface WeekTotals {
+  activities: number;
+  distanceKm: number;
+  durationSec: number;
+  elevationGainM: number;
+  calories: number;
+  effort: number;
+}
+
 export interface WeekData {
   weekLabel: string;
   dateRange: string;
   days: readonly DaySummary[];
-  totals: {
-    activities: number;
-    distanceKm: number;
-    durationSec: number;
-    elevationGainM: number;
-    calories: number;
-    effort: number;
-  };
+  totals: WeekTotals;
+  prevTotals?: WeekTotals | undefined;
   aiSummary: string;
 }

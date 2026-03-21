@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 import { formatDuration } from '@/lib/units';
-import type { WeekData } from '@/types/dashboard';
+import type { WeekData, WeekTotals } from '@/types/dashboard';
 
 import { DayDetail } from './day-detail';
 import { WeekDayBar } from './week-day-bar';
@@ -52,6 +52,9 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
           </div>
         </div>
       </section>
+
+      {/* Week-over-week comparison */}
+      {week.prevTotals && <WeekComparison current={week.totals} previous={week.prevTotals} />}
 
       {/* AI weekly summary */}
       <section className="glass-panel border-accent/20 p-5">
@@ -155,6 +158,109 @@ function WeekHeroStat({ label, value }: WeekHeroStatProps): ReactNode {
         {label}
       </p>
       <p className="mt-0.5 text-lg font-bold tabular-nums tracking-tight text-white">{value}</p>
+    </div>
+  );
+}
+
+interface WeekComparisonProps {
+  current: WeekTotals;
+  previous: WeekTotals;
+}
+
+interface ComparisonMetric {
+  label: string;
+  current: string;
+  pctChange: number;
+  higherIsBetter: boolean;
+}
+
+function pctChange(curr: number, prev: number): number {
+  if (prev === 0) return curr > 0 ? 100 : 0;
+  return ((curr - prev) / prev) * 100;
+}
+
+function WeekComparison({ current, previous }: WeekComparisonProps): ReactNode {
+  const avgPaceCurr = current.distanceKm > 0 ? current.durationSec / current.distanceKm : 0;
+  const avgPacePrev = previous.distanceKm > 0 ? previous.durationSec / previous.distanceKm : 0;
+
+  const metrics: ComparisonMetric[] = [
+    {
+      label: 'Distance',
+      current: `${current.distanceKm.toFixed(1)} km`,
+      pctChange: pctChange(current.distanceKm, previous.distanceKm),
+      higherIsBetter: true,
+    },
+    {
+      label: 'Duration',
+      current: formatDuration(current.durationSec),
+      pctChange: pctChange(current.durationSec, previous.durationSec),
+      higherIsBetter: true,
+    },
+    {
+      label: 'Avg Pace',
+      current:
+        avgPaceCurr > 0
+          ? `${String(Math.floor(avgPaceCurr / 60))}:${String(Math.round(avgPaceCurr % 60)).padStart(2, '0')} /km`
+          : '--',
+      pctChange: avgPacePrev > 0 ? pctChange(avgPacePrev, avgPaceCurr) : 0,
+      higherIsBetter: true,
+    },
+    {
+      label: 'Elevation',
+      current: `${String(Math.round(current.elevationGainM))} m`,
+      pctChange: pctChange(current.elevationGainM, previous.elevationGainM),
+      higherIsBetter: true,
+    },
+    {
+      label: 'Sessions',
+      current: String(current.activities),
+      pctChange: pctChange(current.activities, previous.activities),
+      higherIsBetter: true,
+    },
+    {
+      label: 'Load',
+      current: `${String(Math.round(current.effort))} TRIMP`,
+      pctChange: pctChange(current.effort, previous.effort),
+      higherIsBetter: true,
+    },
+  ];
+
+  return (
+    <section className="glass-panel p-4">
+      <h3 className="mb-3 text-[11px] font-medium uppercase tracking-widest text-glass-text-dim">
+        vs Last Week
+      </h3>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+        {metrics.map((m) => (
+          <ComparisonCard key={m.label} metric={m} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ComparisonCard({ metric }: { metric: ComparisonMetric }): ReactNode {
+  const { label, current, pctChange: pct, higherIsBetter } = metric;
+  const isPositive = higherIsBetter ? pct > 0 : pct < 0;
+  const isNeutral = Math.abs(pct) < 1;
+  const color = isNeutral
+    ? 'text-glass-text-dim'
+    : isPositive
+      ? 'text-emerald-400'
+      : 'text-amber-400';
+  const arrow = pct > 0 ? '\u2191' : pct < 0 ? '\u2193' : '';
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] font-medium uppercase tracking-wider text-glass-text-dim">
+        {label}
+      </span>
+      <span className="text-sm font-semibold tabular-nums text-white">{current}</span>
+      {!isNeutral && (
+        <span className={`text-[10px] font-medium tabular-nums ${color}`}>
+          {arrow} {Math.abs(pct).toFixed(0)}%
+        </span>
+      )}
     </div>
   );
 }

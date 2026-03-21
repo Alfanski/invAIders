@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { formatDuration, formatPace } from '@/lib/units';
@@ -105,6 +106,26 @@ export function DayDetail({ day }: Readonly<DayDetailProps>): ReactNode {
           />
         )}
       </div>
+
+      {day.activityId && (
+        <div className="mt-4 border-t border-glass-border pt-3">
+          <Link
+            href={`/dashboard/workout/${day.activityId}`}
+            className="flex items-center justify-center gap-2 rounded-xl bg-accent/15 px-4 py-2 text-xs font-semibold text-accent transition hover:bg-accent/25"
+          >
+            View full workout
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,18 +11,18 @@ import { EmptyState } from '@/components/dashboard/empty-state';
 import { LoadingSkeleton } from '@/components/dashboard/loading-skeleton';
 import { WeekView } from '@/components/dashboard/week-view';
 import { useSession } from '@/components/providers/session-provider';
-import type { DaySummary, WeekData } from '@/types/dashboard';
+import type { DaySummary, WeekData, WeekTotals } from '@/types/dashboard';
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_SHORTS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function getWeekBounds(): { start: Date; end: Date } {
+function getWeekBounds(weeksAgo = 0): { start: Date; end: Date } {
   const now = new Date();
   const dayOfWeek = now.getDay();
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
   const start = new Date(now);
-  start.setDate(now.getDate() + mondayOffset);
+  start.setDate(now.getDate() + mondayOffset - weeksAgo * 7);
   start.setHours(0, 0, 0, 0);
 
   const end = new Date(start);
@@ -48,6 +48,7 @@ function formatDateRange(start: Date, end: Date): string {
 }
 
 interface ActivityDoc {
+  _id: Id<'activities'>;
   startDate: string;
   name: string;
   sportType: string;
@@ -60,7 +61,18 @@ interface ActivityDoc {
   sufferScore?: number;
 }
 
-function buildWeekData(activities: readonly ActivityDoc[], start: Date, end: Date): WeekData {
+function computeTotals(days: readonly DaySummary[]): WeekTotals {
+  return {
+    activities: days.filter((d) => d.hasActivity).length,
+    distanceKm: Math.round(days.reduce((s, d) => s + (d.distanceKm ?? 0), 0) * 10) / 10,
+    durationSec: days.reduce((s, d) => s + (d.durationSec ?? 0), 0),
+    elevationGainM: days.reduce((s, d) => s + (d.elevationGainM ?? 0), 0),
+    calories: days.reduce((s, d) => s + (d.calories ?? 0), 0),
+    effort: days.reduce((s, d) => s + (d.effort ?? 0), 0),
+  };
+}
+
+function buildDays(activities: readonly ActivityDoc[], start: Date, end: Date): DaySummary[] {
   const activityByDay = new Map<number, ActivityDoc[]>();
 
   for (const a of activities) {
@@ -73,9 +85,9 @@ function buildWeekData(activities: readonly ActivityDoc[], start: Date, end: Dat
     }
   }
 
-  const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
+  const dayOrder = [1, 2, 3, 4, 5, 6, 0];
 
-  const days: DaySummary[] = dayOrder.map((dayOfWeek, i) => {
+  return dayOrder.map((dayOfWeek, i) => {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -114,6 +126,7 @@ function buildWeekData(activities: readonly ActivityDoc[], start: Date, end: Dat
       dayShort: DAY_SHORTS[dayOfWeek] ?? '',
       date: dateStr,
       hasActivity: true,
+      activityId: primary._id,
       activityType: primary.sportType,
       activityName:
         dayActivities.length > 1
@@ -128,24 +141,6 @@ function buildWeekData(activities: readonly ActivityDoc[], start: Date, end: Dat
       effort: Math.round(totalEffort),
     };
   });
-
-  const activeDays = days.filter((d) => d.hasActivity);
-  const totals = {
-    activities: activeDays.length,
-    distanceKm: Math.round(days.reduce((s, d) => s + (d.distanceKm ?? 0), 0) * 10) / 10,
-    durationSec: days.reduce((s, d) => s + (d.durationSec ?? 0), 0),
-    elevationGainM: days.reduce((s, d) => s + (d.elevationGainM ?? 0), 0),
-    calories: days.reduce((s, d) => s + (d.calories ?? 0), 0),
-    effort: days.reduce((s, d) => s + (d.effort ?? 0), 0),
-  };
-
-  return {
-    weekLabel: formatWeekLabel(start),
-    dateRange: formatDateRange(start, end),
-    days,
-    totals,
-    aiSummary: 'Weekly AI summary will appear once the analysis pipeline is active.',
-  };
 }
 
 export default function WeekPage(): ReactNode {
@@ -159,26 +154,41 @@ export default function WeekPage(): ReactNode {
 function WeekContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
   const activities = useQuery(api.activities.listRecentForAthlete, { athleteId, limit: 50 });
 
-  const { start, end } = useMemo(getWeekBounds, []);
+  const { thisWeek, lastWeek } = useMemo(() => {
+    const tw = getWeekBounds(0);
+    const lw = getWeekBounds(1);
+    return { thisWeek: tw, lastWeek: lw };
+  }, []);
 
   const weekStartLocal = useMemo(() => {
-    const s = new Date(start);
-    return s.toISOString().slice(0, 10);
-  }, [start]);
+    return thisWeek.start.toISOString().slice(0, 10);
+  }, [thisWeek]);
 
   const weeklyAnalysis = useQuery(api.weeklyAnalyses.getForAthleteWeek, {
     athleteId,
     weekStartLocal,
   });
 
-  const week = useMemo(() => {
+  const week = useMemo((): WeekData | null => {
     if (!activities) return null;
-    const data = buildWeekData(activities, start, end);
-    if (weeklyAnalysis?.executiveSummary) {
-      data.aiSummary = weeklyAnalysis.executiveSummary;
-    }
-    return data;
-  }, [activities, start, end, weeklyAnalysis]);
+
+    const thisWeekDays = buildDays(activities as ActivityDoc[], thisWeek.start, thisWeek.end);
+    const lastWeekDays = buildDays(activities as ActivityDoc[], lastWeek.start, lastWeek.end);
+
+    const totals = computeTotals(thisWeekDays);
+    const prevTotals = computeTotals(lastWeekDays);
+
+    return {
+      weekLabel: formatWeekLabel(thisWeek.start),
+      dateRange: formatDateRange(thisWeek.start, thisWeek.end),
+      days: thisWeekDays,
+      totals,
+      prevTotals: prevTotals.activities > 0 ? prevTotals : undefined,
+      aiSummary:
+        weeklyAnalysis?.executiveSummary ??
+        'Weekly AI summary will appear once the analysis pipeline is active.',
+    };
+  }, [activities, thisWeek, lastWeek, weeklyAnalysis]);
 
   if (activities === undefined) return <LoadingSkeleton />;
 

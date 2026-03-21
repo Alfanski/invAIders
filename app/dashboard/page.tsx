@@ -12,76 +12,8 @@ import { EmptyState } from '@/components/dashboard/empty-state';
 import { LoadingSkeleton } from '@/components/dashboard/loading-skeleton';
 import { WorkoutView } from '@/components/dashboard/workout-view';
 import { useSession } from '@/components/providers/session-provider';
-import type { AnalysisData, StravaSplit, WorkoutStats, WorkoutStreams } from '@/types/dashboard';
-
-function buildStreams(
-  stream: {
-    timeSec: number[];
-    heartrateBpm?: number[];
-    velocitySmooth?: number[];
-    altitudeM?: number[];
-    cadenceRpm?: number[];
-  } | null,
-): WorkoutStreams | null {
-  if (!stream) return null;
-
-  const time = stream.timeSec;
-
-  function toPoints(data: number[] | undefined): { timeSec: number; value: number }[] {
-    if (!data) return [];
-    return data.map((v, i) => ({ timeSec: time[i] ?? 0, value: v }));
-  }
-
-  function velocityToPace(data: number[] | undefined): { timeSec: number; value: number }[] {
-    if (!data) return [];
-    return data.map((v, i) => ({
-      timeSec: time[i] ?? 0,
-      value: v > 0 ? 1000 / v : 0,
-    }));
-  }
-
-  return {
-    heartRate: toPoints(stream.heartrateBpm),
-    pace: velocityToPace(stream.velocitySmooth),
-    elevation: toPoints(stream.altitudeM),
-    cadence: toPoints(stream.cadenceRpm),
-  };
-}
-
-function formatDateLabel(startDate: string): string {
-  const d = new Date(startDate);
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function toAnalysisData(
-  analysis: {
-    executiveSummary: string;
-    positives: string[];
-    improvements: string[];
-    splitAnalysis?: { trend: string; comment: string } | undefined;
-    nextSession?:
-      | { type: string; durationMin: number; intensity: string; description: string }
-      | undefined;
-    weatherNote?: string | undefined;
-    effortScore?: number | undefined;
-  } | null,
-): AnalysisData | null {
-  if (!analysis) return null;
-  return {
-    executiveSummary: analysis.executiveSummary,
-    positives: analysis.positives,
-    improvements: analysis.improvements,
-    splitAnalysis: analysis.splitAnalysis ?? null,
-    nextSession: analysis.nextSession ?? null,
-    weatherNote: analysis.weatherNote ?? null,
-    effortScore: analysis.effortScore ?? null,
-  };
-}
+import { buildStreams, formatDateLabel, toAnalysisData } from '@/lib/activity-helpers';
+import type { StravaSplit, WorkoutStats } from '@/types/dashboard';
 
 export default function DashboardPage(): ReactNode {
   const session = useSession();
@@ -113,6 +45,11 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
   );
 
   const athleteZones = useQuery(api.athleteZones.getLatestZones, { athleteId });
+
+  const gearResult = useQuery(
+    api.gear.getByStravaGearIdPublic,
+    activity?.stravaGearId ? { athleteId, stravaGearId: activity.stravaGearId } : 'skip',
+  );
 
   const fetchStreams = useAction(api.stravaSync.fetchStreamsOnDemand);
   const fetchedRef = useRef<Set<string>>(new Set());
@@ -183,6 +120,16 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
 
   const heartRateZones = athleteZones?.heartRateZones ?? undefined;
 
+  const gear = gearResult
+    ? {
+        name: gearResult.name,
+        gearType: gearResult.gearType,
+        distanceKm: gearResult.distanceMeters / 1000,
+        brandName: gearResult.brandName ?? null,
+        modelName: gearResult.modelName ?? null,
+      }
+    : undefined;
+
   return (
     <div className="space-y-5">
       <ActivityPicker
@@ -204,6 +151,7 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
         heartRateZones={heartRateZones}
         heartRateStream={heartRateStream}
         streamsLoading={streamsFetching}
+        gear={gear}
       />
     </div>
   );
