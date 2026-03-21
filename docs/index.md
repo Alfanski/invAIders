@@ -28,6 +28,7 @@ AI fitness coach powered by Strava. Analyzes workouts, generates dashboards, del
 | ID                                                       | Title                                    | Status |
 | -------------------------------------------------------- | ---------------------------------------- | ------ |
 | [DD-001](design/DD-001-application-architecture-plan.md) | Application architecture & contract prep | Draft  |
+| [DD-002](design/DD-002-frontend-contract-plan.md)        | Frontend contract plan (views A/B/C)     | Draft  |
 
 _Add further design docs as `docs/design/DD-NNN-title.md`._
 
