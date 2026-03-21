@@ -122,6 +122,13 @@ export const listAll = internalQuery({
   },
 });
 
+export const getById = query({
+  args: { activityId: v.id('activities') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.activityId);
+  },
+});
+
 export const getLatestForAthlete = query({
   args: { athleteId: v.id('athletes') },
   handler: async (ctx, args) => {
@@ -141,6 +148,37 @@ export const listRecentForAthlete = query({
       .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
       .order('desc')
       .take(args.limit ?? 200);
+  },
+});
+
+export const listRecentWithoutStreams = internalQuery({
+  args: {
+    athleteId: v.id('athletes'),
+    limit: v.number(),
+    scanLimit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const maxScan = args.scanLimit ?? 200;
+    const activities = await ctx.db
+      .query('activities')
+      .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
+      .order('desc')
+      .take(maxScan);
+
+    const result: { _id: (typeof activities)[number]['_id']; stravaActivityId: string }[] = [];
+
+    for (const activity of activities) {
+      if (result.length >= args.limit) break;
+      const stream = await ctx.db
+        .query('activityStreams')
+        .withIndex('by_activity', (q) => q.eq('activityId', activity._id))
+        .first();
+      if (!stream) {
+        result.push({ _id: activity._id, stravaActivityId: activity.stravaActivityId });
+      }
+    }
+
+    return result;
   },
 });
 

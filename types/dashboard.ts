@@ -56,6 +56,37 @@ export interface WorkoutStreams {
   cadence: readonly StreamPoint[];
 }
 
+export interface StravaSplit {
+  distance: number;
+  elapsed_time: number;
+  elevation_difference: number;
+  moving_time: number;
+  split: number;
+  average_speed: number;
+  average_heartrate?: number;
+  pace_zone?: number;
+}
+
+export interface AnalysisData {
+  executiveSummary: string;
+  positives: string[];
+  improvements: string[];
+  splitAnalysis?: { trend: string; comment: string } | null;
+  nextSession?: {
+    type: string;
+    durationMin: number;
+    intensity: string;
+    description: string;
+  } | null;
+  weatherNote?: string | null;
+  effortScore?: number | null;
+}
+
+export interface HeartRateZone {
+  min: number;
+  max: number;
+}
+
 export interface DaySummary {
   dayLabel: string;
   dayShort: string;

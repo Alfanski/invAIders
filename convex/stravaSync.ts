@@ -222,8 +222,10 @@ export const backfillHistory = internalAction({
         athleteId: args.athleteId,
       });
 
-      // Per-workout AI analysis is handled by the n8n pipeline (triggered via webhook).
-      // No need to schedule triggerWorkoutAnalysis here.
+      // Schedule stream backfill for recent activities (rate-limit-aware batching)
+      await ctx.scheduler.runAfter(0, internal.stravaSync.backfillStreams, {
+        athleteId: args.athleteId,
+      });
 
       await ctx.runMutation(internal.athletes.updateBackfillStatus, {
         athleteId: args.athleteId,
@@ -240,6 +242,104 @@ export const backfillHistory = internalAction({
       });
       throw err;
     }
+  },
+});
+
+// ---------------------------------------------------------------------------
+// backfillStreams: fetch + downsample streams for recent activities.
+// Processes in batches to respect Strava rate limits (100 req/15min).
+// Self-schedules continuation if more remain.
+// API cost: 1 call per activity, capped at STREAM_BATCH_SIZE per invocation.
+// ---------------------------------------------------------------------------
+
+const STREAM_BATCH_SIZE = 5;
+const STREAM_RATE_LIMIT_DELAY_MS = 16 * 60 * 1000; // 16 min on rate limit
+const STREAM_MAX_ACTIVITIES = 5;
+
+export const backfillStreams = internalAction({
+  args: {
+    athleteId: v.id('athletes'),
+    remaining: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const maxRemaining = args.remaining ?? STREAM_MAX_ACTIVITIES;
+    if (maxRemaining <= 0) return;
+
+    const batchSize = Math.min(STREAM_BATCH_SIZE, maxRemaining);
+
+    const missing = await ctx.runQuery(internal.activities.listRecentWithoutStreams, {
+      athleteId: args.athleteId,
+      limit: batchSize,
+      scanLimit: STREAM_MAX_ACTIVITIES,
+    });
+
+    if (missing.length === 0) {
+      console.log(`Stream backfill complete for ${args.athleteId} -- no more missing`);
+      return;
+    }
+
+    let token: string;
+    try {
+      token = await getValidAccessToken(ctx, args.athleteId);
+    } catch {
+      console.warn(`Stream backfill: token error for ${args.athleteId}`);
+      return;
+    }
+
+    let fetched = 0;
+
+    for (const activity of missing) {
+      try {
+        const streams = await fetchActivityStreams(token, activity.stravaActivityId);
+        const downsampled = downsampleStreams(streams);
+
+        if (downsampled) {
+          const stats = computeStreamStats(downsampled);
+          await ctx.runMutation(internal.activityStreams.upsertForActivity, {
+            activityId: activity._id,
+            kind: 'downsampled',
+            timeSec: downsampled.timeSec,
+            ...(downsampled.distanceM ? { distanceM: downsampled.distanceM } : {}),
+            ...(downsampled.latlng ? { latlng: downsampled.latlng } : {}),
+            ...(downsampled.altitudeM ? { altitudeM: downsampled.altitudeM } : {}),
+            ...(downsampled.heartrateBpm ? { heartrateBpm: downsampled.heartrateBpm } : {}),
+            ...(downsampled.cadenceRpm ? { cadenceRpm: downsampled.cadenceRpm } : {}),
+            ...(downsampled.watts ? { watts: downsampled.watts } : {}),
+            ...(downsampled.velocitySmooth ? { velocitySmooth: downsampled.velocitySmooth } : {}),
+            ...(downsampled.tempC ? { tempC: downsampled.tempC } : {}),
+            ...(downsampled.gradeSmooth ? { gradeSmooth: downsampled.gradeSmooth } : {}),
+            meta: downsampled.meta,
+            stats,
+          });
+        }
+        fetched++;
+      } catch (err) {
+        if (err instanceof StravaRateLimitError) {
+          console.warn(
+            `Stream backfill: rate limited after ${String(fetched)}/${String(missing.length)} -- scheduling retry`,
+          );
+          await ctx.scheduler.runAfter(
+            STREAM_RATE_LIMIT_DELAY_MS,
+            internal.stravaSync.backfillStreams,
+            { athleteId: args.athleteId, remaining: maxRemaining - fetched },
+          );
+          return;
+        }
+        if (err instanceof StravaApiError && err.status === 404) {
+          fetched++;
+          continue;
+        }
+        console.warn(
+          `Stream backfill: error for ${activity.stravaActivityId}:`,
+          err instanceof Error ? err.message : String(err),
+        );
+        continue;
+      }
+    }
+
+    console.log(
+      `Stream backfill complete for ${args.athleteId}: ${String(fetched)} streams fetched`,
+    );
   },
 });
 

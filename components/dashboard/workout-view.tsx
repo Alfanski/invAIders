@@ -5,16 +5,23 @@ import type { ReactNode } from 'react';
 
 import { formatDuration, formatPace } from '@/lib/units';
 import type {
+  AnalysisData,
+  HeartRateZone,
   MetricDefinition,
   MetricKey,
+  StravaSplit,
   StreamPoint,
   StreamSummary,
   WorkoutStats,
   WorkoutStreams,
 } from '@/types/dashboard';
 
+import { CoachingBreakdown } from './coaching-breakdown';
 import { MetricCard } from './metric-card';
 import { MetricChart } from './metric-chart';
+import { RouteMap } from './route-map';
+import { SplitTable } from './split-table';
+import { ZoneDistribution } from './zone-distribution';
 
 interface WorkoutViewProps {
   title: string;
@@ -22,6 +29,14 @@ interface WorkoutViewProps {
   stats: WorkoutStats;
   streams: WorkoutStreams;
   coachingInsight: string;
+  splits?: readonly StravaSplit[] | undefined;
+  latlng?: readonly number[][] | undefined;
+  altitude?: readonly number[] | undefined;
+  distance?: readonly number[] | undefined;
+  analysis?: AnalysisData | null | undefined;
+  heartRateZones?: readonly HeartRateZone[] | undefined;
+  heartRateStream?: readonly number[] | undefined;
+  streamsLoading?: boolean | undefined;
 }
 
 function computeSummary(stream: readonly StreamPoint[]): StreamSummary {
@@ -64,6 +79,14 @@ export function WorkoutView({
   stats,
   streams,
   coachingInsight,
+  splits,
+  latlng,
+  altitude,
+  distance,
+  analysis,
+  heartRateZones,
+  heartRateStream,
+  streamsLoading = false,
 }: Readonly<WorkoutViewProps>): ReactNode {
   const [expandedMetric, setExpandedMetric] = useState<MetricKey | null>(null);
 
@@ -144,34 +167,50 @@ export function WorkoutView({
         </div>
       </section>
 
-      {/* AI coaching -- prominent position */}
-      <section className="glass-panel border-accent/20 p-5">
-        <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/20">
-            <svg
-              className="h-4 w-4 text-accent"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-              />
-            </svg>
+      {/* AI coaching -- full breakdown or simple fallback */}
+      {analysis ? (
+        <CoachingBreakdown analysis={analysis} />
+      ) : (
+        <section className="glass-panel border-accent/20 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/20">
+              <svg
+                className="h-4 w-4 text-accent"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-accent">
+                AI Coach Analysis
+              </h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-glass-text-muted">
+                {coachingInsight}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-accent">
-              AI Coach Analysis
-            </h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-glass-text-muted">
-              {coachingInsight}
-            </p>
+        </section>
+      )}
+
+      {/* Stream loading indicator */}
+      {streamsLoading && (
+        <section className="glass-panel flex items-center gap-3 p-4">
+          <div className="flex gap-1">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:200ms]" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:400ms]" />
           </div>
-        </div>
-      </section>
+          <span className="text-xs text-glass-text-muted">Loading stream data from Strava...</span>
+        </section>
+      )}
 
       {/* Interactive metric cards */}
       <section>
@@ -214,6 +253,26 @@ export function WorkoutView({
             );
           })()}
       </section>
+
+      {/* Split table */}
+      {splits && splits.length > 0 && <SplitTable splits={splits} />}
+
+      {/* HR zone distribution */}
+      {heartRateZones &&
+        heartRateZones.length > 0 &&
+        heartRateStream &&
+        heartRateStream.length > 0 && (
+          <ZoneDistribution
+            heartRateStream={heartRateStream}
+            zones={heartRateZones}
+            totalTimeSec={stats.durationSec}
+          />
+        )}
+
+      {/* GPS route map + elevation profile */}
+      {latlng && latlng.length > 1 && (
+        <RouteMap latlng={latlng} altitude={altitude} distance={distance} />
+      )}
 
       {/* Temperature as subtle footer detail */}
       <section className="flex items-center gap-2 px-1 text-xs text-glass-text-dim">
