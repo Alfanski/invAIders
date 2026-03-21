@@ -29,6 +29,10 @@ generates visual dashboards, and delivers voice debriefs via ElevenLabs.
 - **Validate all**: `npm run validate` (type-check + lint + format + test)
 - **Dev**: `npm run dev`
 - **Build**: `npm run build`
+- **n8n list**: `npm run n8n:list` (list workflows on n8n Cloud)
+- **n8n pull**: `npm run n8n:pull` (pull all workflows to `n8n/workflows/`)
+- **n8n push**: `npm run n8n:push` (push all workflow JSON to n8n Cloud)
+- **n8n credentials**: `npm run n8n:credentials` (list credential IDs on Cloud)
 
 ## Architecture
 
@@ -39,6 +43,22 @@ Strava --> Vercel API route (webhook) --> n8n pipeline
      --> store all in Convex
 
 Next.js dashboard <-- Convex (reactive subscriptions)
+```
+
+### n8n Cloud (Orchestration)
+
+- **Instance:** `https://lorenzo-hackathon.app.n8n.cloud`
+- **Auth:** API key in `.env.local` (`N8N_BASE_URL` + `N8N_API_KEY`)
+- **IaC:** Workflow JSON files in `n8n/workflows/`, deployed via REST API
+- **Sync:** `npm run n8n:push` / `npm run n8n:pull` (wraps `.cursor/skills/n8n-workflow/sync.sh`)
+- **Skill:** `.cursor/skills/n8n-workflow/SKILL.md` for creating/editing/deploying workflows
+- **Rule:** `.cursor/rules/n8n.mdc` (auto-loaded for `n8n/**` files)
+
+Agents source `.env.local` before making direct API calls:
+
+```bash
+source .env.local
+curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows"
 ```
 
 ### Key Data Flow
@@ -94,25 +114,29 @@ Every activity record tracks its pipeline state:
 
 ## Documentation
 
-| Path                  | Purpose                               |
-| --------------------- | ------------------------------------- |
-| `docs/index.md`       | Central documentation hub             |
-| `docs/design/DD-*.md` | Architecture & technical design docs  |
-| `docs/prd/PRD-*.md`   | Product requirements documents        |
-| `AGENTS.md`           | This file -- cross-tool agent context |
-| `tasks/lessons.md`    | Corrections and patterns learned      |
-| `tasks/lessons-pr.md` | PR review patterns                    |
-| `.cursor/rules/*.mdc` | File-scoped coding rules              |
+| Path                   | Purpose                                     |
+| ---------------------- | ------------------------------------------- |
+| `docs/index.md`        | Central documentation hub                   |
+| `docs/design/DD-*.md`  | Architecture & technical design docs        |
+| `docs/prd/PRD-*.md`    | Product requirements documents              |
+| `AGENTS.md`            | This file -- cross-tool agent context       |
+| `tasks/lessons.md`     | Corrections and patterns learned            |
+| `tasks/lessons-pr.md`  | PR review patterns                          |
+| `.cursor/rules/*.mdc`  | File-scoped coding rules                    |
+| `n8n/workflows/*.json` | Version-controlled n8n workflow definitions |
 
 ## Agent Framework
 
 Eclipse Agentic Framework (v0.1.0). Skills: implement, debug, refactor,
-test, pr-review, create-prd, compound, audit-docs, resolve-pr-feedback, research.
+test, pr-review, create-prd, compound, audit-docs, resolve-pr-feedback,
+research, **n8n-workflow**.
 
 <!-- convex-ai-start -->
+
 This project uses [Convex](https://convex.dev) as its backend.
 
 When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
 
 Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
+
 <!-- convex-ai-end -->

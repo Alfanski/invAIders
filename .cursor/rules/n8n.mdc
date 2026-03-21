@@ -1,0 +1,47 @@
+---
+description: Rules for working with n8n workflow files and the n8n Cloud API
+globs: n8n/**
+---
+
+# n8n Workflow Rules
+
+When working with files in `n8n/`, follow these conventions:
+
+## Skill
+
+For non-trivial n8n work (creating workflows, debugging pipelines, deploying),
+read the `n8n-workflow` skill at `.cursor/skills/n8n-workflow/SKILL.md`.
+
+## Quick Reference
+
+### Environment
+
+Credentials live in `.env.local` (gitignored). Source it before making API calls:
+
+```bash
+source .env.local
+```
+
+### Commands
+
+- `npm run n8n:list` -- list all workflows on Cloud
+- `npm run n8n:pull` -- pull all workflows from Cloud to `n8n/workflows/`
+- `npm run n8n:push` -- push all local workflow JSON files to Cloud
+- `npm run n8n:credentials` -- list credential IDs available on Cloud
+- `./.cursor/skills/n8n-workflow/sync.sh <command>` -- full sync script (see `--help`)
+
+### After Deploying
+
+Always commit workflow JSON to git after pushing to n8n Cloud, so the repo
+stays in sync as the source of truth.
+
+### Pipeline Docs
+
+Workflow JSON files map to these implementation plans:
+
+| File | IP Doc |
+|------|--------|
+| `01-activity-trigger.json` | `docs/prd/IP-001c-activity-trigger.md` |
+| `02-fetch-activity.json` | `docs/prd/IP-001d-fetch-data.md` |
+| `03-ai-analysis.json` | `docs/prd/IP-001e-ai-analysis.md` |
+| `04-voice-debrief.json` | `docs/prd/IP-001i-voice-debrief.md` |

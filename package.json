@@ -1,8 +1,11 @@
 {
-  "name": "maicoach",
+  "name": "poc-strava-webhook",
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -17,7 +20,11 @@
     "validate": "npm run type-check && npm run lint && npm run format:check && npm run test:run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "prepare": "husky"
+    "prepare": "husky",
+    "n8n:list": "./.cursor/skills/n8n-workflow/sync.sh list",
+    "n8n:pull": "./.cursor/skills/n8n-workflow/sync.sh pull",
+    "n8n:push": "./.cursor/skills/n8n-workflow/sync.sh push",
+    "n8n:credentials": "./.cursor/skills/n8n-workflow/sync.sh credentials"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
