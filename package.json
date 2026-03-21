@@ -6,9 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -24,7 +21,8 @@
     "n8n:list": "./.cursor/skills/n8n-workflow/sync.sh list",
     "n8n:pull": "./.cursor/skills/n8n-workflow/sync.sh pull",
     "n8n:push": "./.cursor/skills/n8n-workflow/sync.sh push",
-    "n8n:credentials": "./.cursor/skills/n8n-workflow/sync.sh credentials"
+    "n8n:credentials": "./.cursor/skills/n8n-workflow/sync.sh credentials",
+    "strava:test-activity": "npx tsx scripts/strava-test-activity.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

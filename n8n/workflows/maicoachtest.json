@@ -1,93 +1,91 @@
 {
-    "updatedAt": "2026-03-21T14:00:40.996Z",
-    "createdAt": "2026-03-21T13:40:01.935Z",
-    "id": "BduAY2rrLyipfB38",
-    "name": "mAICoachTest",
-    "description": null,
-    "active": false,
-    "isArchived": false,
-    "nodes": [
-        {
-            "parameters": {
-                "path": "7802ff7f-6971-4bfe-b8a9-334b7dd96a13",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                0,
-                0
-            ],
-            "id": "b1952cf4-9ae4-41ae-b854-6bbf77240671",
-            "name": "Webhook",
-            "webhookId": "7802ff7f-6971-4bfe-b8a9-334b7dd96a13"
-        }
-    ],
-    "connections": {},
-    "settings": {
-        "executionOrder": "v1",
-        "binaryMode": "separate"
+  "updatedAt": "2026-03-21T14:00:40.996Z",
+  "createdAt": "2026-03-21T13:40:01.935Z",
+  "id": "BduAY2rrLyipfB38",
+  "name": "mAICoachTest",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7802ff7f-6971-4bfe-b8a9-334b7dd96a13",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "b1952cf4-9ae4-41ae-b854-6bbf77240671",
+      "name": "Webhook",
+      "webhookId": "7802ff7f-6971-4bfe-b8a9-334b7dd96a13"
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "abcdfae5-f8cc-4ca8-b679-f68d22552e41",
+  "activeVersionId": null,
+  "versionCounter": 2,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-21T14:02:03.390Z",
+      "createdAt": "2026-03-21T14:02:03.390Z",
+      "role": "workflow:editor",
+      "workflowId": "BduAY2rrLyipfB38",
+      "projectId": "VCNUmiFc5QVDMcOU",
+      "project": {
+        "updatedAt": "2026-03-21T10:19:25.324Z",
+        "createdAt": "2026-03-21T10:09:36.540Z",
+        "id": "VCNUmiFc5QVDMcOU",
+        "name": "Christoph Sch\u00e4fer <christophschaefer44@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "95b4c01a-35c5-4ee3-9f44-994b8c5467a3"
+      }
     },
-    "staticData": null,
-    "meta": null,
-    "pinData": {},
-    "versionId": "abcdfae5-f8cc-4ca8-b679-f68d22552e41",
-    "activeVersionId": null,
-    "versionCounter": 2,
-    "triggerCount": 0,
-    "shared": [
-        {
-            "updatedAt": "2026-03-21T14:02:03.390Z",
-            "createdAt": "2026-03-21T14:02:03.390Z",
-            "role": "workflow:editor",
-            "workflowId": "BduAY2rrLyipfB38",
-            "projectId": "VCNUmiFc5QVDMcOU",
-            "project": {
-                "updatedAt": "2026-03-21T10:19:25.324Z",
-                "createdAt": "2026-03-21T10:09:36.540Z",
-                "id": "VCNUmiFc5QVDMcOU",
-                "name": "Christoph Sch\u00e4fer <christophschaefer44@gmail.com>",
-                "type": "personal",
-                "icon": null,
-                "description": null,
-                "creatorId": "95b4c01a-35c5-4ee3-9f44-994b8c5467a3"
-            }
-        },
-        {
-            "updatedAt": "2026-03-21T14:02:03.391Z",
-            "createdAt": "2026-03-21T14:02:03.391Z",
-            "role": "workflow:editor",
-            "workflowId": "BduAY2rrLyipfB38",
-            "projectId": "pkpqR86dlS0HanTX",
-            "project": {
-                "updatedAt": "2026-03-21T10:10:16.766Z",
-                "createdAt": "2026-03-21T10:09:36.540Z",
-                "id": "pkpqR86dlS0HanTX",
-                "name": "Klaus Freiberger <klaus-freiberger@web.de>",
-                "type": "personal",
-                "icon": null,
-                "description": null,
-                "creatorId": "9f9f114b-b56e-49d7-9622-56d268f315f1"
-            }
-        },
-        {
-            "updatedAt": "2026-03-21T13:40:01.939Z",
-            "createdAt": "2026-03-21T13:40:01.939Z",
-            "role": "workflow:owner",
-            "workflowId": "BduAY2rrLyipfB38",
-            "projectId": "xYIYON5ZIIUPTZ75",
-            "project": {
-                "updatedAt": "2026-03-21T10:07:36.019Z",
-                "createdAt": "2026-03-21T10:07:30.592Z",
-                "id": "xYIYON5ZIIUPTZ75",
-                "name": "Lorenzo Russo da Costa Auer <lorenzo.hackathon@gmail.com>",
-                "type": "personal",
-                "icon": null,
-                "description": null,
-                "creatorId": "61850c73-7257-493c-a32b-d0000dfdcbc0"
-            }
-        }
-    ],
-    "tags": [],
-    "activeVersion": null
+    {
+      "updatedAt": "2026-03-21T14:02:03.391Z",
+      "createdAt": "2026-03-21T14:02:03.391Z",
+      "role": "workflow:editor",
+      "workflowId": "BduAY2rrLyipfB38",
+      "projectId": "pkpqR86dlS0HanTX",
+      "project": {
+        "updatedAt": "2026-03-21T10:10:16.766Z",
+        "createdAt": "2026-03-21T10:09:36.540Z",
+        "id": "pkpqR86dlS0HanTX",
+        "name": "Klaus Freiberger <klaus-freiberger@web.de>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "9f9f114b-b56e-49d7-9622-56d268f315f1"
+      }
+    },
+    {
+      "updatedAt": "2026-03-21T13:40:01.939Z",
+      "createdAt": "2026-03-21T13:40:01.939Z",
+      "role": "workflow:owner",
+      "workflowId": "BduAY2rrLyipfB38",
+      "projectId": "xYIYON5ZIIUPTZ75",
+      "project": {
+        "updatedAt": "2026-03-21T10:07:36.019Z",
+        "createdAt": "2026-03-21T10:07:30.592Z",
+        "id": "xYIYON5ZIIUPTZ75",
+        "name": "Lorenzo Russo da Costa Auer <lorenzo.hackathon@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "61850c73-7257-493c-a32b-d0000dfdcbc0"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
 }

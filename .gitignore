@@ -3,6 +3,7 @@
 .env
 .env.*
 !.env.local.example
+.strava-tokens.json
 
 # Python
 __pycache__/
