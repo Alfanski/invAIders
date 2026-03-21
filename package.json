@@ -1,5 +1,5 @@
 {
-  "name": "poc-strava-webhook",
+  "name": "coachagent",
   "version": "0.1.0",
   "private": true,
   "scripts": {

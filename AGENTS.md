@@ -61,24 +61,19 @@ source .env.local
 curl -s -H "X-N8N-API-KEY: $N8N_API_KEY" "$N8N_BASE_URL/api/v1/workflows"
 ```
 
-### Vercel Deployments
+### Vercel Deployment
 
-Two Vercel projects deploy from the same GitHub repo (`Alfanski/invAIders`):
-
-| Project              | Branch | Purpose            | URL                                     |
-| -------------------- | ------ | ------------------ | --------------------------------------- |
-| `coachagent`         | `main` | Main app           | `https://coachagent.vercel.app`         |
-| `strava-webhook-poc` | `poc`  | Strava webhook POC | `https://strava-webhook-poc.vercel.app` |
+| Project      | Branch | URL                             |
+| ------------ | ------ | ------------------------------- |
+| `coachagent` | `main` | `https://coachagent.vercel.app` |
 
 - **Team:** `lorenzohackathon-invaiders`
-- **Git Integration:** Both projects auto-deploy on push to their respective branches
-- **Production branch:** Set per-project in Vercel Dashboard → Settings → Environments → Production
-- **`.vercel/project.json`** can only point to one project at a time; switch with `vercel link --project <name>`
+- **Git Integration:** Auto-deploys on push to `main`
 - **Env vars for preview scope:** CLI has a bug (v50+), use REST API instead (see `tasks/lessons.md`)
 
 ### Strava Webhook
 
-- **Endpoint:** `https://strava-webhook-poc.vercel.app/api/webhooks/strava`
+- **Endpoint:** `https://coachagent.vercel.app/api/webhooks/strava`
 - **Route:** `app/api/webhooks/strava/route.ts`
 - **Subscription ID:** `336243`
 - **Verify token:** stored in `STRAVA_WEBHOOK_VERIFY_TOKEN` env var
@@ -202,7 +197,7 @@ set -a && source .env.local && set +a
 curl -X POST https://www.strava.com/api/v3/push_subscriptions \
  -d "client_id=$STRAVA_CLIENT_ID" \
  -d "client_secret=$STRAVA_CLIENT_SECRET" \
- -d "callback_url=https://strava-webhook-poc.vercel.app/api/webhooks/strava" \
+ -d "callback_url=https://coachagent.vercel.app/api/webhooks/strava" \
  -d "verify_token=$STRAVA_WEBHOOK_VERIFY_TOKEN"
 ```
 
