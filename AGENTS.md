@@ -27,8 +27,8 @@ generates visual dashboards, and delivers voice debriefs via ElevenLabs.
 - **Test run**: `npm run test:run` (Vitest, single run for CI)
 - **Test coverage**: `npm run test:coverage` (80% threshold enforced)
 - **Validate all**: `npm run validate` (type-check + lint + format + test)
-  <!-- - **Dev**: `npm run dev` -->
-  <!-- - **Build**: `npm run build` -->
+- **Dev**: `npm run dev`
+- **Build**: `npm run build`
 
 ## Architecture
 

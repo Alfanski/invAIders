@@ -5,13 +5,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['**/*.{test,spec}.{ts,tsx}', '!**/e2e/**'],
+    exclude: ['**/node_modules/**', '**/.next/**', '**/e2e/**'],
     passWithNoTests: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.{test,spec}.{ts,tsx}', 'src/**/*.d.ts'],
+      include: ['lib/**/*.ts', 'components/**/*.{ts,tsx}', 'convex/**/*.ts'],
+      exclude: ['**/*.{test,spec}.{ts,tsx}', '**/*.d.ts', 'convex/_generated/**'],
       thresholds: {
         statements: 80,
         branches: 80,
@@ -22,7 +23,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
+      '@': path.resolve(import.meta.dirname, '.'),
     },
   },
 });

@@ -2,6 +2,7 @@
 .envrc
 .env
 .env.*
+!.env.local.example
 
 # Python
 __pycache__/
@@ -23,6 +24,9 @@ dist/
 build/
 coverage/
 .next/
+tsconfig.tsbuildinfo
+test-results/
+playwright-report/
 
 # IDE (user-specific, not framework)
 .idea/
