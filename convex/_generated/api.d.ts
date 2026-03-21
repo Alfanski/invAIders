@@ -8,13 +8,21 @@
  * @module
  */
 
+import type * as athletes from "../athletes.js";
+import type * as strava from "../strava.js";
+import type * as stravaTokens from "../stravaTokens.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  athletes: typeof athletes;
+  strava: typeof strava;
+  stravaTokens: typeof stravaTokens;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.
