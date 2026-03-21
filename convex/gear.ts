@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 
-import { internalMutation, internalQuery } from './_generated/server';
+import { internalMutation, internalQuery, query } from './_generated/server';
 
 export const upsertFromStrava = internalMutation({
   args: {
@@ -37,6 +37,21 @@ export const upsertFromStrava = internalMutation({
 });
 
 export const getByStravaGearId = internalQuery({
+  args: {
+    athleteId: v.id('athletes'),
+    stravaGearId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('gear')
+      .withIndex('by_strava_gear', (q) =>
+        q.eq('athleteId', args.athleteId).eq('stravaGearId', args.stravaGearId),
+      )
+      .unique();
+  },
+});
+
+export const getByStravaGearIdPublic = query({
   args: {
     athleteId: v.id('athletes'),
     stravaGearId: v.string(),

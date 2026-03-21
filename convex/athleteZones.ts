@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 
-import { internalMutation, internalQuery } from './_generated/server';
+import { internalMutation, internalQuery, query } from './_generated/server';
 
 const ZONE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -59,5 +59,18 @@ export const getLatest = internalQuery({
     if (age > ZONE_TTL_MS) return null;
 
     return latest;
+  },
+});
+
+export const getLatestZones = query({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
+      .query('athleteZones')
+      .withIndex('by_athlete', (q) => q.eq('athleteId', args.athleteId))
+      .order('desc')
+      .take(1);
+
+    return results[0] ?? null;
   },
 });

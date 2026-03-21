@@ -77,3 +77,18 @@ export const getDownsampledForActivity = query({
       .first();
   },
 });
+
+export const getDownsampled = query({
+  args: { activityId: v.id('activities') },
+  handler: async (ctx, args) => {
+    const streams = await ctx.db
+      .query('activityStreams')
+      .withIndex('by_activity', (q) => q.eq('activityId', args.activityId))
+      .take(10);
+
+    const downsampled = streams.find((s) => s.kind === 'downsampled');
+    if (downsampled) return downsampled;
+
+    return streams.find((s) => s.kind === 'full') ?? null;
+  },
+});

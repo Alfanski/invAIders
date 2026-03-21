@@ -99,6 +99,26 @@ export const updateBackfillStatus = internalMutation({
   },
 });
 
+export const getProfileForAnalysis = query({
+  args: { athleteId: v.id('athletes') },
+  handler: async (ctx, args) => {
+    const athlete = await ctx.db.get(args.athleteId);
+    if (!athlete) return null;
+
+    return {
+      _id: athlete._id,
+      firstName: athlete.firstName ?? null,
+      lastName: athlete.lastName ?? null,
+      sex: athlete.sex ?? null,
+      weightKg: athlete.weightKg ?? null,
+      restingHr: athlete.restingHr ?? null,
+      maxHr: athlete.maxHr ?? null,
+      goalText: athlete.goalText ?? null,
+      measurementPreference: athlete.measurementPreference ?? null,
+    };
+  },
+});
+
 export const getStravaLinkStatus = query({
   args: { stravaAthleteId: v.string() },
   handler: async (ctx, args) => {

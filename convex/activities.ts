@@ -178,3 +178,69 @@ export const patchTrimp = internalMutation({
     });
   },
 });
+
+export const getForAnalysis = query({
+  args: { activityId: v.id('activities') },
+  handler: async (ctx, args) => {
+    const activity = await ctx.db.get(args.activityId);
+    if (!activity) return null;
+
+    return {
+      _id: activity._id,
+      stravaActivityId: activity.stravaActivityId,
+      athleteId: activity.athleteId,
+      name: activity.name,
+      sportType: activity.sportType,
+      activityBucket: activity.activityBucket,
+      startDate: activity.startDate,
+      startDateLocal: activity.startDateLocal,
+      timezone: activity.timezone,
+      distanceMeters: activity.distanceMeters,
+      movingTimeSec: activity.movingTimeSec,
+      elapsedTimeSec: activity.elapsedTimeSec,
+      totalElevationGainM: activity.totalElevationGainM,
+      hasHeartrate: activity.hasHeartrate,
+      averageHeartrate: activity.averageHeartrate,
+      maxHeartrate: activity.maxHeartrate,
+      averageSpeed: activity.averageSpeed,
+      maxSpeed: activity.maxSpeed,
+      averageCadence: activity.averageCadence,
+      averageWatts: activity.averageWatts,
+      averageTempC: activity.averageTempC,
+      calories: activity.calories,
+      sufferScore: activity.sufferScore,
+      trimp: activity.trimp,
+      processingStatus: activity.processingStatus,
+      stravaGearId: activity.stravaGearId,
+      splitsMetric: activity.splitsMetric as unknown,
+      laps: activity.laps as unknown,
+    };
+  },
+});
+
+export const getRecentForAthlete = query({
+  args: {
+    athleteId: v.id('athletes'),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 5;
+    const activities = await ctx.db
+      .query('activities')
+      .withIndex('by_athlete_start', (q) => q.eq('athleteId', args.athleteId))
+      .order('desc')
+      .take(limit + 1);
+
+    return activities.slice(0, limit).map((a) => ({
+      _id: a._id,
+      name: a.name,
+      sportType: a.sportType,
+      startDate: a.startDate,
+      distanceMeters: a.distanceMeters,
+      movingTimeSec: a.movingTimeSec,
+      averageHeartrate: a.averageHeartrate,
+      trimp: a.trimp,
+      processingStatus: a.processingStatus,
+    }));
+  },
+});
