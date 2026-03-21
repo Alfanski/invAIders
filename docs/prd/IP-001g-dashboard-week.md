@@ -31,14 +31,14 @@ Aggregated from all activities in current week (Mon-Sun).
 
 6 rows comparing this week vs last week:
 
-| Metric | Green = Improvement |
-|--------|---------------------|
-| Distance | Up |
-| Duration | Neutral (context-dependent) |
-| Avg Pace | Faster (lower min/km) |
-| Avg HR | Lower (at same effort) |
-| Elevation | Up |
-| Sessions | Up |
+| Metric    | Green = Improvement         |
+| --------- | --------------------------- |
+| Distance  | Up                          |
+| Duration  | Neutral (context-dependent) |
+| Avg Pace  | Faster (lower min/km)       |
+| Avg HR    | Lower (at same effort)      |
+| Elevation | Up                          |
+| Sessions  | Up                          |
 
 Each row shows: metric name, this week value, last week value, % change with colored arrow.
 
@@ -71,18 +71,18 @@ getWeeklyAnalysis(athleteId, weekStart)      -> weekly analysis doc or null
 
 ## Files to Create
 
-| File | Purpose |
-|------|---------|
-| `app/dashboard/week/page.tsx` | Week view page |
-| `components/dashboard/week-header.tsx` | Date range header |
-| `components/dashboard/week-summary-bar.tsx` | 4 summary cards |
-| `components/dashboard/week-comparison.tsx` | This week vs last week |
-| `components/dashboard/activity-list.tsx` | Compact activity cards |
-| `components/dashboard/activity-card.tsx` | Single activity card |
-| `components/dashboard/weekly-coaching-report.tsx` | AI weekly summary |
-| `lib/comparison.ts` | `computeSentiment()` logic |
-| `lib/week-boundaries.ts` | `getWeekRange(date, tz)` helper |
-| `convex/weekly.ts` | Week queries + analysis trigger |
+| File                                              | Purpose                         |
+| ------------------------------------------------- | ------------------------------- |
+| `app/dashboard/week/page.tsx`                     | Week view page                  |
+| `components/dashboard/week-header.tsx`            | Date range header               |
+| `components/dashboard/week-summary-bar.tsx`       | 4 summary cards                 |
+| `components/dashboard/week-comparison.tsx`        | This week vs last week          |
+| `components/dashboard/activity-list.tsx`          | Compact activity cards          |
+| `components/dashboard/activity-card.tsx`          | Single activity card            |
+| `components/dashboard/weekly-coaching-report.tsx` | AI weekly summary               |
+| `lib/comparison.ts`                               | `computeSentiment()` logic      |
+| `lib/week-boundaries.ts`                          | `getWeekRange(date, tz)` helper |
+| `convex/weekly.ts`                                | Week queries + analysis trigger |
 
 ## Implementation Sequence
 

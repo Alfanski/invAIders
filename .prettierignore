@@ -1,0 +1,13 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+convex/_generated/
+pnpm-lock.yaml
+package-lock.json
+
+# Framework and agent skill files (not project source)
+.agents/
+.cursor/skills/
+.claude/

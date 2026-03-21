@@ -45,21 +45,21 @@ POST https://www.strava.com/api/v3/push_subscriptions
 
 ## Edge Cases
 
-| Case | Handling |
-|------|----------|
+| Case                                | Handling                                                                         |
+| ----------------------------------- | -------------------------------------------------------------------------------- |
 | Bulk sync (many activities at once) | Per-activity idempotency + throttled concurrency (max 3 parallel Strava fetches) |
-| Manual activity (no GPS/streams) | Pipeline proceeds without streams; skip downsampling, analyze summary only |
-| Activity deleted after webhook | `GET /activities/{id}` returns 404 -> mark `status: "error"`, stop |
-| Rate limit (429) | Read `Retry-After`, pause, shift `nextPollAt` |
-| Duplicate webhook events | Unique index + idempotent handler returns 200 |
+| Manual activity (no GPS/streams)    | Pipeline proceeds without streams; skip downsampling, analyze summary only       |
+| Activity deleted after webhook      | `GET /activities/{id}` returns 404 -> mark `status: "error"`, stop               |
+| Rate limit (429)                    | Read `Retry-After`, pause, shift `nextPollAt`                                    |
+| Duplicate webhook events            | Unique index + idempotent handler returns 200                                    |
 
 ## Files to Create
 
-| File | Purpose |
-|------|---------|
+| File                               | Purpose                                         |
+| ---------------------------------- | ----------------------------------------------- |
 | `app/api/webhooks/strava/route.ts` | GET (challenge) + POST (event filter + forward) |
-| `convex/http.ts` | Secured endpoints for n8n calls |
-| `convex/stravaPollState.ts` | Cursor tracking mutations/queries |
+| `convex/http.ts`                   | Secured endpoints for n8n calls                 |
+| `convex/stravaPollState.ts`        | Cursor tracking mutations/queries               |
 
 ## Implementation Sequence
 

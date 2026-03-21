@@ -41,11 +41,11 @@ Gemini -> voice_summary text -> n8n -> ElevenLabs API -> MP3 bytes
 
 ## Three Debrief Types
 
-| Type | Source | Length | Trigger |
-|------|--------|--------|---------|
-| Per-activity | `analyses.voiceSummary` | ~1-2 min | After each activity analysis |
-| Weekly | `weeklyAnalyses.voiceSummary` | ~2-3 min | Weekly (cron or on-demand) |
-| Form assessment | `formAssessments.voiceSummary` | ~1-2 min | After backfill or weekly |
+| Type            | Source                         | Length   | Trigger                      |
+| --------------- | ------------------------------ | -------- | ---------------------------- |
+| Per-activity    | `analyses.voiceSummary`        | ~1-2 min | After each activity analysis |
+| Weekly          | `weeklyAnalyses.voiceSummary`  | ~2-3 min | Weekly (cron or on-demand)   |
+| Form assessment | `formAssessments.voiceSummary` | ~1-2 min | After backfill or weekly     |
 
 ## Text Preparation Rules (Gemini Contract)
 
@@ -66,20 +66,20 @@ Gemini -> voice_summary text -> n8n -> ElevenLabs API -> MP3 bytes
 
 ## Error Handling
 
-| Failure | Strategy |
-|---------|----------|
-| ElevenLabs 5xx/429 | Retry 3x; set `generating_audio` -> `error` + message |
-| Text too long | Pre-validate character count; Gemini instructed to cap at 300 words |
-| Upload fails | Keep `voice_summary` text so user can trigger "Regenerate audio" |
+| Failure            | Strategy                                                            |
+| ------------------ | ------------------------------------------------------------------- |
+| ElevenLabs 5xx/429 | Retry 3x; set `generating_audio` -> `error` + message               |
+| Text too long      | Pre-validate character count; Gemini instructed to cap at 300 words |
+| Upload fails       | Keep `voice_summary` text so user can trigger "Regenerate audio"    |
 
 ## Files to Create
 
-| File | Purpose |
-|------|---------|
-| `components/audio/voice-player.tsx` | Shared custom audio player |
-| `convex/voiceDebriefs.ts` | Mutations: save debrief; Queries: get by activity/week/form |
-| `convex/files.ts` | `getVoiceUrl(storageId)` query |
-| `convex/formAssessments.ts` | Form assessment + voice linkage |
+| File                                | Purpose                                                     |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `components/audio/voice-player.tsx` | Shared custom audio player                                  |
+| `convex/voiceDebriefs.ts`           | Mutations: save debrief; Queries: get by activity/week/form |
+| `convex/files.ts`                   | `getVoiceUrl(storageId)` query                              |
+| `convex/formAssessments.ts`         | Form assessment + voice linkage                             |
 
 ## Implementation Sequence
 

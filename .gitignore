@@ -16,6 +16,13 @@ build/
 
 # Node
 node_modules/
+package-lock.json
+
+# Build & test output
+dist/
+build/
+coverage/
+.next/
 
 # IDE (user-specific, not framework)
 .idea/

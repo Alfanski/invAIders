@@ -59,7 +59,12 @@ Next.js (Vercel) + Convex + n8n + Gemini + ElevenLabs + Strava API
   "improvements": ["..."],
   "hr_zone_analysis": { "Z1": { "pct": 12, "comment": "..." } },
   "split_analysis": { "trend": "negative_split", "comment": "..." },
-  "next_session": { "type": "Easy Run", "duration_min": 45, "intensity": "Z1-Z2", "description": "..." },
+  "next_session": {
+    "type": "Easy Run",
+    "duration_min": 45,
+    "intensity": "Z1-Z2",
+    "description": "..."
+  },
   "weather_note": "..."
 }
 ```
@@ -73,26 +78,26 @@ Three views. Mobile-first. Use shadcn/ui for all components. Recharts for charts
 
 ### View A: Last Workout
 
-| Section | Data Source |
-|---|---|
-| **9 stat cards:** distance, duration, avg pace, avg HR, elevation, cadence, calories, effort (TRIMP or suffer_score), temp | `activity.*`, convert `average_speed` m/s to min/km |
-| **Split table:** km, pace, HR, elevation, cadence, zone per split. Color-coded rows (green=fast, red=slow). Detect negative/positive split. | `activity.splits_metric[]` |
-| **HR over time chart:** area chart with Z1-Z5 background bands, avg HR overlay line | `streams.heartrate` + `streams.time`, downsampled to ~500pts |
-| **Pace over time chart:** line chart, inverted Y-axis (faster=higher), avg pace overlay | `streams.velocity_smooth` + `streams.distance` |
-| **Zone distribution:** horizontal stacked bar, Z1-Z5 with percentages and time | `streams.heartrate` bucketed by `athlete.zones` boundaries |
-| **GPS route map:** Leaflet + OSM, single-color polyline (color-coded = Phase 2). Start/end markers. Elevation profile mini-chart below. | `streams.latlng` + `streams.altitude` |
-| **AI coaching report:** summary, positives, improvements, next session rec | Gemini analysis JSON |
-| **Voice debrief player:** inline audio, duration shown | ElevenLabs audio URL (download + store in Convex file storage, don't rely on temp URLs) |
-| **Gear card:** shoe/bike name, cumulative km, progress bar, replacement hint | `activity.gear` + `GET /gear/{id}` |
+| Section                                                                                                                                     | Data Source                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **9 stat cards:** distance, duration, avg pace, avg HR, elevation, cadence, calories, effort (TRIMP or suffer_score), temp                  | `activity.*`, convert `average_speed` m/s to min/km                                     |
+| **Split table:** km, pace, HR, elevation, cadence, zone per split. Color-coded rows (green=fast, red=slow). Detect negative/positive split. | `activity.splits_metric[]`                                                              |
+| **HR over time chart:** area chart with Z1-Z5 background bands, avg HR overlay line                                                         | `streams.heartrate` + `streams.time`, downsampled to ~500pts                            |
+| **Pace over time chart:** line chart, inverted Y-axis (faster=higher), avg pace overlay                                                     | `streams.velocity_smooth` + `streams.distance`                                          |
+| **Zone distribution:** horizontal stacked bar, Z1-Z5 with percentages and time                                                              | `streams.heartrate` bucketed by `athlete.zones` boundaries                              |
+| **GPS route map:** Leaflet + OSM, single-color polyline (color-coded = Phase 2). Start/end markers. Elevation profile mini-chart below.     | `streams.latlng` + `streams.altitude`                                                   |
+| **AI coaching report:** summary, positives, improvements, next session rec                                                                  | Gemini analysis JSON                                                                    |
+| **Voice debrief player:** inline audio, duration shown                                                                                      | ElevenLabs audio URL (download + store in Convex file storage, don't rely on temp URLs) |
+| **Gear card:** shoe/bike name, cumulative km, progress bar, replacement hint                                                                | `activity.gear` + `GET /gear/{id}`                                                      |
 
 ### View B: Last Week
 
-| Section | Data Source |
-|---|---|
-| **Week summary bar:** total activities, distance, duration, elevation | `GET /athlete/activities?after={7d_ago}`, aggregate |
-| **Week-over-week comparison:** distance, duration, avg pace, avg HR, elevation, sessions -- this week vs last week, with % change arrows (green=improving) | Two weeks of activities, compare aggregates |
-| **Activity list:** compact cards -- date, name, type, distance, pace, HR, effort, link to full view | Activity summaries |
-| **AI weekly summary + voice debrief** | All week's data sent to Gemini with "weekly analysis" prompt |
+| Section                                                                                                                                                    | Data Source                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Week summary bar:** total activities, distance, duration, elevation                                                                                      | `GET /athlete/activities?after={7d_ago}`, aggregate          |
+| **Week-over-week comparison:** distance, duration, avg pace, avg HR, elevation, sessions -- this week vs last week, with % change arrows (green=improving) | Two weeks of activities, compare aggregates                  |
+| **Activity list:** compact cards -- date, name, type, distance, pace, HR, effort, link to full view                                                        | Activity summaries                                           |
+| **AI weekly summary + voice debrief**                                                                                                                      | All week's data sent to Gemini with "weekly analysis" prompt |
 
 ### View C: Current Form ("Coach Status")
 
@@ -116,15 +121,15 @@ TSB interpretation:
   < -30     Overreaching, injury risk
 ```
 
-| Section | Data Source |
-|---|---|
-| **Form gauge:** semicircular gauge, needle at current TSB, color zones. Label: "Your coach says: Race Ready" | Computed TSB |
-| **3 metric cards:** Fitness (CTL), Fatigue (ATL), Form (TSB) -- each with value + 7-day trend arrow | Computed daily |
-| **Fitness/Fatigue/Form chart (8 weeks):** 3 overlaid lines. CTL=blue solid, ATL=red dashed, TSB=green filled area. Vertical markers on activity days. | Computed time series |
-| **Weekly load trend (4 weeks):** bar chart of total weekly TRIMP. Flag if >10% sustained ramp rate. | Sum TRIMP per week |
-| **Recovery indicator:** hours since last activity, estimated recovery %, bar. "Ready for: Easy run" / "Not ready for: Intervals" | Last activity TRIMP + elapsed time. Easy<50 = 12-18h, Moderate 50-100 = 24-36h, Hard 100-200 = 36-48h, Very hard >200 = 48-72h |
-| **Long-term progression (if 8+ weeks):** sparklines for avg pace trend, avg HR at same pace, weekly volume | Historical activity comparison |
-| **AI form assessment + voice briefing** | Full history + CTL/ATL/TSB fed to Gemini |
+| Section                                                                                                                                               | Data Source                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Form gauge:** semicircular gauge, needle at current TSB, color zones. Label: "Your coach says: Race Ready"                                          | Computed TSB                                                                                                                   |
+| **3 metric cards:** Fitness (CTL), Fatigue (ATL), Form (TSB) -- each with value + 7-day trend arrow                                                   | Computed daily                                                                                                                 |
+| **Fitness/Fatigue/Form chart (8 weeks):** 3 overlaid lines. CTL=blue solid, ATL=red dashed, TSB=green filled area. Vertical markers on activity days. | Computed time series                                                                                                           |
+| **Weekly load trend (4 weeks):** bar chart of total weekly TRIMP. Flag if >10% sustained ramp rate.                                                   | Sum TRIMP per week                                                                                                             |
+| **Recovery indicator:** hours since last activity, estimated recovery %, bar. "Ready for: Easy run" / "Not ready for: Intervals"                      | Last activity TRIMP + elapsed time. Easy<50 = 12-18h, Moderate 50-100 = 24-36h, Hard 100-200 = 36-48h, Very hard >200 = 48-72h |
+| **Long-term progression (if 8+ weeks):** sparklines for avg pace trend, avg HR at same pace, weekly volume                                            | Historical activity comparison                                                                                                 |
+| **AI form assessment + voice briefing**                                                                                                               | Full history + CTL/ATL/TSB fed to Gemini                                                                                       |
 
 ## 1.6 Voice Debrief (1.5h)
 
@@ -138,50 +143,50 @@ TSB interpretation:
 
 ## Time Estimate: ~14-16h
 
-| Task | Hours |
-|---|---|
-| Strava OAuth | 2 |
-| Activity trigger | 1.5 |
-| Fetch + store data | 1 |
-| AI analysis + TRIMP | 2 |
-| Dashboard (3 views) | 5-6 |
-| Voice debrief | 1.5 |
-| Integration + debugging | 1-2 |
+| Task                    | Hours |
+| ----------------------- | ----- |
+| Strava OAuth            | 2     |
+| Activity trigger        | 1.5   |
+| Fetch + store data      | 1     |
+| AI analysis + TRIMP     | 2     |
+| Dashboard (3 views)     | 5-6   |
+| Voice debrief           | 1.5   |
+| Integration + debugging | 1-2   |
 
 ---
 
 ## Phase 2: Nice-to-Have (Sunday, pick in order)
 
-| # | Feature | Time | Why |
-|---|---|---|---|
-| 2.1 | **Notifications** -- Slack/Discord/email after analysis with stats + link | 1h | Lowest effort, highest wow |
-| 2.2 | **Race Prediction** -- Gemini estimates 5K/10K/HM/M times from training history | 1h | Single card, huge demo moment |
-| 2.3 | **Coach Personality** -- prompt engineering for tone/style/memory | 0.5h | Zero code, just a better prompt |
-| 2.4 | **Weather Context** -- OpenWeatherMap historical data injected into AI prompt | 1h | Makes AI feel genuinely smart |
-| 2.5 | **Training Plan + Calendar Push** -- Gemini generates 7-day plan, n8n pushes to Google Calendar | 2h | "The AI scheduled my next 3 workouts" |
-| 2.6 | **Gear Tracking + Alerts** -- cumulative km per shoe/bike, replacement warnings | 1h | Easy API call, nice detail |
-| 2.7 | **Color-coded GPS map** -- pace or HR mapped to polyline segment colors | 1.5h | Visually impressive upgrade |
-| 2.8 | **Historical Trends** -- fetch 60+ activities, multi-week pace/HR/volume charts, AI trend commentary | 2h | Most valuable long-term |
-| 2.9 | **Comparative Analysis** -- "vs your last similar run: 8s/km faster at 3bpm lower HR" | 1h | Low-effort, high-impact |
-| 2.10 | **Shareable Report Card** -- OG image of workout summary for social sharing | 1.5h | Athletes love sharing |
+| #    | Feature                                                                                              | Time | Why                                   |
+| ---- | ---------------------------------------------------------------------------------------------------- | ---- | ------------------------------------- |
+| 2.1  | **Notifications** -- Slack/Discord/email after analysis with stats + link                            | 1h   | Lowest effort, highest wow            |
+| 2.2  | **Race Prediction** -- Gemini estimates 5K/10K/HM/M times from training history                      | 1h   | Single card, huge demo moment         |
+| 2.3  | **Coach Personality** -- prompt engineering for tone/style/memory                                    | 0.5h | Zero code, just a better prompt       |
+| 2.4  | **Weather Context** -- OpenWeatherMap historical data injected into AI prompt                        | 1h   | Makes AI feel genuinely smart         |
+| 2.5  | **Training Plan + Calendar Push** -- Gemini generates 7-day plan, n8n pushes to Google Calendar      | 2h   | "The AI scheduled my next 3 workouts" |
+| 2.6  | **Gear Tracking + Alerts** -- cumulative km per shoe/bike, replacement warnings                      | 1h   | Easy API call, nice detail            |
+| 2.7  | **Color-coded GPS map** -- pace or HR mapped to polyline segment colors                              | 1.5h | Visually impressive upgrade           |
+| 2.8  | **Historical Trends** -- fetch 60+ activities, multi-week pace/HR/volume charts, AI trend commentary | 2h   | Most valuable long-term               |
+| 2.9  | **Comparative Analysis** -- "vs your last similar run: 8s/km faster at 3bpm lower HR"                | 1h   | Low-effort, high-impact               |
+| 2.10 | **Shareable Report Card** -- OG image of workout summary for social sharing                          | 1.5h | Athletes love sharing                 |
 
 ---
 
 ## Strava API Quick Reference
 
-| Endpoint | Returns | Rate Cost |
-|---|---|---|
-| `GET /athlete` | Profile, measurement pref | 1 |
-| `GET /athlete/zones` | HR + power zone boundaries | 1 |
-| `GET /athletes/{id}/stats` | Recent/YTD/all-time totals (run/ride/swim) | 1 |
-| `GET /athlete/activities?per_page=200&after=` | Activity list (paginated) | 1 |
-| `GET /activities/{id}` | Full activity detail + splits + laps + segments + gear | 1 |
-| `GET /activities/{id}/streams?keys=...` | Second-by-second data (time, HR, pace, GPS, altitude, cadence, watts, temp) | 1 |
-| `GET /activities/{id}/zones` | Time-in-zone per activity (premium only) | 1 |
-| `GET /activities/{id}/laps` | Structured lap data | 1 |
-| `GET /gear/{id}` | Gear name + cumulative distance | 1 |
-| **Limits:** 100 req/15min, 1000 req/day | | |
-| **Streams resolution:** low=100pts, medium=1000pts, high=10000pts | | |
+| Endpoint                                                          | Returns                                                                     | Rate Cost |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------- | --------- |
+| `GET /athlete`                                                    | Profile, measurement pref                                                   | 1         |
+| `GET /athlete/zones`                                              | HR + power zone boundaries                                                  | 1         |
+| `GET /athletes/{id}/stats`                                        | Recent/YTD/all-time totals (run/ride/swim)                                  | 1         |
+| `GET /athlete/activities?per_page=200&after=`                     | Activity list (paginated)                                                   | 1         |
+| `GET /activities/{id}`                                            | Full activity detail + splits + laps + segments + gear                      | 1         |
+| `GET /activities/{id}/streams?keys=...`                           | Second-by-second data (time, HR, pace, GPS, altitude, cadence, watts, temp) | 1         |
+| `GET /activities/{id}/zones`                                      | Time-in-zone per activity (premium only)                                    | 1         |
+| `GET /activities/{id}/laps`                                       | Structured lap data                                                         | 1         |
+| `GET /gear/{id}`                                                  | Gear name + cumulative distance                                             | 1         |
+| **Limits:** 100 req/15min, 1000 req/day                           |                                                                             |           |
+| **Streams resolution:** low=100pts, medium=1000pts, high=10000pts |                                                                             |           |
 
 ---
 

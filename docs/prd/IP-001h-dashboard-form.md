@@ -29,13 +29,13 @@ FormPage
 - TSB range: [-40, 25] mapped to 180-degree arc
 - Color zones on arc:
 
-| Zone | TSB Range | Color | Label |
-|------|-----------|-------|-------|
-| Overreaching | < -30 | Red | "Overreaching -- injury risk" |
-| Fatigued | -30 to -10 | Orange | "Fatigued -- absorbing load" |
-| Balanced | -10 to +5 | Yellow | "Balanced -- normal training" |
-| Race Ready | +5 to +15 | Green | "Race Ready -- peak form" |
-| Fresh | > +15 | Blue | "Fresh -- possibly undertrained" |
+| Zone         | TSB Range  | Color  | Label                            |
+| ------------ | ---------- | ------ | -------------------------------- |
+| Overreaching | < -30      | Red    | "Overreaching -- injury risk"    |
+| Fatigued     | -30 to -10 | Orange | "Fatigued -- absorbing load"     |
+| Balanced     | -10 to +5  | Yellow | "Balanced -- normal training"    |
+| Race Ready   | +5 to +15  | Green  | "Race Ready -- peak form"        |
+| Fresh        | > +15      | Blue   | "Fresh -- possibly undertrained" |
 
 - Needle: line from center to arc edge at computed angle
 - Animation: CSS `transition: transform 0.8s ease-out`
@@ -45,8 +45,8 @@ FormPage
 
 ```ts
 const clamped = Math.min(25, Math.max(-40, tsb));
-const t = (clamped - (-40)) / (25 - (-40));  // 0..1
-const angleRad = Math.PI * (1 - t);           // pi -> 0
+const t = (clamped - -40) / (25 - -40); // 0..1
+const angleRad = Math.PI * (1 - t); // pi -> 0
 ```
 
 ## MetricCards (CTL, ATL, TSB)
@@ -71,7 +71,7 @@ const angleRad = Math.PI * (1 - t);           // pi -> 0
 
 - Recharts `BarChart`, 4 bars (one per week)
 - Y-axis: total weekly TRIMP
-- Ramp rate annotation: `ReferenceLine` at previous week * 1.1
+- Ramp rate annotation: `ReferenceLine` at previous week \* 1.1
 - Warning badge if week-over-week increase > 10%
 
 ## RecoveryIndicator
@@ -79,15 +79,16 @@ const angleRad = Math.PI * (1 - t);           // pi -> 0
 **Recovery time targets by TRIMP:**
 
 | Last Activity TRIMP | Recovery Hours |
-|---------------------|----------------|
-| < 50 (easy) | 12-18h |
-| 50-100 (moderate) | 24-36h |
-| 100-200 (hard) | 36-48h |
-| > 200 (very hard) | 48-72h |
+| ------------------- | -------------- |
+| < 50 (easy)         | 12-18h         |
+| 50-100 (moderate)   | 24-36h         |
+| 100-200 (hard)      | 36-48h         |
+| > 200 (very hard)   | 48-72h         |
 
 Linear interpolation within ranges.
 
 **Display:**
+
 - Hours since last activity
 - Recovery percentage (progress bar, 0-100%)
 - Readiness label: "Ready for: Easy run" / "Not ready for: Intervals"
@@ -118,21 +119,21 @@ Only shown if 8+ weeks of data. Three mini sparkline charts (~100px tall):
 
 ## Files to Create
 
-| File | Purpose |
-|------|---------|
-| `app/dashboard/form/page.tsx` | Coach Status page |
-| `components/form/form-gauge.tsx` | SVG semicircle + needle |
-| `components/form/metric-cards.tsx` | CTL / ATL / TSB cards |
-| `components/form/fitness-chart.tsx` | 8-week Recharts composed chart |
-| `components/form/weekly-load-chart.tsx` | 4-week TRIMP bar chart |
-| `components/form/recovery-indicator.tsx` | Progress bar + readiness |
-| `components/form/progression-sparklines.tsx` | 3 mini charts |
-| `components/form/form-coaching-report.tsx` | AI assessment display |
-| `components/form/form-backfill-banner.tsx` | Loading state |
-| `lib/form/recovery.ts` | Recovery % from TRIMP + elapsed time |
-| `lib/form/zones.ts` | `tsbToZone()` mapping |
-| `convex/formSnapshots.ts` | `getSeries`, `getLatest`, `bulkUpsert` |
-| `convex/formAssessments.ts` | `getLatestAssessment`, save assessment + voice references |
+| File                                         | Purpose                                                   |
+| -------------------------------------------- | --------------------------------------------------------- |
+| `app/dashboard/form/page.tsx`                | Coach Status page                                         |
+| `components/form/form-gauge.tsx`             | SVG semicircle + needle                                   |
+| `components/form/metric-cards.tsx`           | CTL / ATL / TSB cards                                     |
+| `components/form/fitness-chart.tsx`          | 8-week Recharts composed chart                            |
+| `components/form/weekly-load-chart.tsx`      | 4-week TRIMP bar chart                                    |
+| `components/form/recovery-indicator.tsx`     | Progress bar + readiness                                  |
+| `components/form/progression-sparklines.tsx` | 3 mini charts                                             |
+| `components/form/form-coaching-report.tsx`   | AI assessment display                                     |
+| `components/form/form-backfill-banner.tsx`   | Loading state                                             |
+| `lib/form/recovery.ts`                       | Recovery % from TRIMP + elapsed time                      |
+| `lib/form/zones.ts`                          | `tsbToZone()` mapping                                     |
+| `convex/formSnapshots.ts`                    | `getSeries`, `getLatest`, `bulkUpsert`                    |
+| `convex/formAssessments.ts`                  | `getLatestAssessment`, save assessment + voice references |
 
 ## Implementation Sequence
 

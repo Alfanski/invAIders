@@ -38,17 +38,17 @@ WorkoutPage
 
 Layout: `grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4` (always 3 columns).
 
-| Card | Source | Unit conversion |
-|------|--------|-----------------|
-| Distance | `activity.distanceMeters` | m -> km or mi |
-| Duration | `activity.movingTimeSec` | sec -> h:mm:ss |
-| Avg Pace/Speed | `activity.averageSpeed` | m/s -> min/km (run) or km/h (ride) |
-| Avg HR | `activity.averageHeartrate` | bpm |
-| Elevation | `activity.totalElevationGainM` | m or ft |
-| Cadence | `activity.averageCadence` | spm (run) or rpm (ride) |
-| Calories | `activity.calories` | kcal |
-| Effort | `activity.trimp` or `sufferScore` | TRIMP value |
-| Temperature | `activity.averageTempC` | C or F |
+| Card           | Source                            | Unit conversion                    |
+| -------------- | --------------------------------- | ---------------------------------- |
+| Distance       | `activity.distanceMeters`         | m -> km or mi                      |
+| Duration       | `activity.movingTimeSec`          | sec -> h:mm:ss                     |
+| Avg Pace/Speed | `activity.averageSpeed`           | m/s -> min/km (run) or km/h (ride) |
+| Avg HR         | `activity.averageHeartrate`       | bpm                                |
+| Elevation      | `activity.totalElevationGainM`    | m or ft                            |
+| Cadence        | `activity.averageCadence`         | spm (run) or rpm (ride)            |
+| Calories       | `activity.calories`               | kcal                               |
+| Effort         | `activity.trimp` or `sufferScore` | TRIMP value                        |
+| Temperature    | `activity.averageTempC`           | C or F                             |
 
 Unit system from `athlete.measurementPreference` (metric vs imperial).
 
@@ -57,6 +57,7 @@ Unit system from `athlete.measurementPreference` (metric vs imperial).
 **Columns:** Split #, Distance, Pace, HR, Elevation +/-, Cadence, HR Zone.
 
 **Color coding:**
+
 - Compute min/max pace across rows
 - Interpolate: fastest -> green `hsl(142 70% 36%)`, slowest -> red `hsl(0 70% 45%)`
 - Apply as left border `border-l-4` on each `<tr>`
@@ -131,12 +132,12 @@ Unit system from `athlete.measurementPreference` (metric vs imperial).
 
 ## Loading & Empty States
 
-| State | UI |
-|-------|-----|
-| Initial load | Skeleton blocks matching each component shape |
-| No activities | Illustration + CTA "Connect Strava" |
-| Processing | `ProcessingBanner` showing pipeline stage |
-| Error | `AlertDestructive` + retry button |
+| State         | UI                                            |
+| ------------- | --------------------------------------------- |
+| Initial load  | Skeleton blocks matching each component shape |
+| No activities | Illustration + CTA "Connect Strava"           |
+| Processing    | `ProcessingBanner` showing pipeline stage     |
+| Error         | `AlertDestructive` + retry button             |
 
 ## Convex Queries
 

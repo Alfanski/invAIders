@@ -10,13 +10,14 @@
 
 ```ts
 // lib/coaching/trimp.ts
-TRIMP = duration_min * HRratio * exp(b * HRratio)
+TRIMP = duration_min * HRratio * exp(b * HRratio);
 
-HRratio = (avgHR - restHR) / (maxHR - restHR)
-b = 1.92 (male) | 1.67 (female) | 1.79 (unknown)
+HRratio = (avgHR - restHR) / (maxHR - restHR);
+b = 1.92(male) | 1.67(female) | 1.79(unknown);
 ```
 
 **Guards:**
+
 - If `avgHR` is null, 0, or > 250: return null
 - If `maxHR <= restHR`: return null
 - Clamp `HRratio` to `[0, 1.5]` to prevent exp explosion
@@ -24,13 +25,13 @@ b = 1.92 (male) | 1.67 (female) | 1.79 (unknown)
 
 ## Gemini Configuration
 
-| Setting | Value |
-|---------|-------|
+| Setting              | Value                                           |
+| -------------------- | ----------------------------------------------- |
 | Model (per-activity) | `gemini-2.0-flash` (fast, cheap, JSON-friendly) |
-| Model (weekly/form) | `gemini-2.5-pro` (better reasoning) |
-| Temperature | `0.3` (reduce hallucination for metrics) |
-| Response format | `application/json` (structured output) |
-| Max output tokens | `2048-4096` |
+| Model (weekly/form)  | `gemini-2.5-pro` (better reasoning)             |
+| Temperature          | `0.3` (reduce hallucination for metrics)        |
+| Response format      | `application/json` (structured output)          |
+| Max output tokens    | `2048-4096`                                     |
 
 ## Prompt Structure
 
@@ -97,32 +98,32 @@ TSB_today = CTL_today - ATL_today
 
 ## n8n Analysis Pipeline
 
-| # | Node | Notes |
-|---|------|-------|
-| 1 | Trigger | Payload: `convexActivityId` |
-| 2 | HTTP: Convex GetActivityForAnalysis | Returns downsampled streams, splits, zones |
-| 3 | HTTP: Convex SetStatus | -> `analyzing` |
-| 4 | Code: BuildGeminiBody | Assemble prompts + schema |
-| 5 | HTTP: Gemini generateContent | JSON mode |
-| 6 | Code: ParseAndValidate | Zod safeParse; on fail retry once |
-| 7 | HTTP: Convex SaveAnalysis | Store analysis + TRIMP on activity |
-| 8 | HTTP: Convex UpdateFitness | Recompute CTL/ATL/TSB series |
-| 9 | HTTP: Convex SetStatus | -> `generating_audio` |
-| 10 | On failure | -> `error` + message |
+| #   | Node                                | Notes                                      |
+| --- | ----------------------------------- | ------------------------------------------ |
+| 1   | Trigger                             | Payload: `convexActivityId`                |
+| 2   | HTTP: Convex GetActivityForAnalysis | Returns downsampled streams, splits, zones |
+| 3   | HTTP: Convex SetStatus              | -> `analyzing`                             |
+| 4   | Code: BuildGeminiBody               | Assemble prompts + schema                  |
+| 5   | HTTP: Gemini generateContent        | JSON mode                                  |
+| 6   | Code: ParseAndValidate              | Zod safeParse; on fail retry once          |
+| 7   | HTTP: Convex SaveAnalysis           | Store analysis + TRIMP on activity         |
+| 8   | HTTP: Convex UpdateFitness          | Recompute CTL/ATL/TSB series               |
+| 9   | HTTP: Convex SetStatus              | -> `generating_audio`                      |
+| 10  | On failure                          | -> `error` + message                       |
 
 ## Files to Create
 
-| File | Purpose |
-|------|---------|
-| `lib/coaching/trimp.ts` | `computeTrimp()` pure function |
-| `lib/coaching/ctl-atl-tsb.ts` | `ewmaStep()`, `projectSeries()` |
-| `lib/coaching/zones.ts` | `bucketHrToZone()`, zone distribution computation |
-| `lib/ai/prompts/activity-analysis.ts` | System + user prompt templates |
-| `lib/ai/prompts/weekly-analysis.ts` | Weekly prompt template |
-| `lib/ai/prompts/form-assessment.ts` | Form assessment prompt |
-| `convex/analyses.ts` | Mutations: `saveAnalysis`; Queries: `getForActivity` |
-| `convex/formSnapshots.ts` | `bulkUpsert`, `getSeries`, `getLatest` |
-| `types/gemini-analysis.ts` | TypeScript interfaces + JSON Schema |
+| File                                  | Purpose                                              |
+| ------------------------------------- | ---------------------------------------------------- |
+| `lib/coaching/trimp.ts`               | `computeTrimp()` pure function                       |
+| `lib/coaching/ctl-atl-tsb.ts`         | `ewmaStep()`, `projectSeries()`                      |
+| `lib/coaching/zones.ts`               | `bucketHrToZone()`, zone distribution computation    |
+| `lib/ai/prompts/activity-analysis.ts` | System + user prompt templates                       |
+| `lib/ai/prompts/weekly-analysis.ts`   | Weekly prompt template                               |
+| `lib/ai/prompts/form-assessment.ts`   | Form assessment prompt                               |
+| `convex/analyses.ts`                  | Mutations: `saveAnalysis`; Queries: `getForActivity` |
+| `convex/formSnapshots.ts`             | `bulkUpsert`, `getSeries`, `getLatest`               |
+| `types/gemini-analysis.ts`            | TypeScript interfaces + JSON Schema                  |
 
 ## Implementation Sequence
 

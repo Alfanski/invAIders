@@ -62,10 +62,10 @@ https://www.strava.com/oauth/authorize
 **MVP decision:** Use **Convex Auth only**. Strava is a linked provider/data source
 for the authenticated Convex user, not a standalone login system.
 
-| Approach | Decision |
-|----------|----------|
-| Convex Auth | Adopted for MVP (`useConvexAuth()` + auth subject mapping on `athletes.authSubject`) |
-| Cookie session | Not used in MVP to avoid dual-auth complexity |
+| Approach       | Decision                                                                             |
+| -------------- | ------------------------------------------------------------------------------------ |
+| Convex Auth    | Adopted for MVP (`useConvexAuth()` + auth subject mapping on `athletes.authSubject`) |
+| Cookie session | Not used in MVP to avoid dual-auth complexity                                        |
 
 Client never receives tokens. Only a `getStravaLinkStatus` query returning
 `{ linked: boolean, athleteName, profileImage, measurementPreference }`.
@@ -86,16 +86,16 @@ Client never receives tokens. Only a `getStravaLinkStatus` query returning
 
 ## Files to Create
 
-| File | Purpose |
-|------|---------|
-| `app/api/auth/strava/route.ts` | Build authorize URL, set state cookie, redirect |
-| `app/api/auth/strava/callback/route.ts` | Exchange code, store tokens, set session |
-| `convex/stravaTokens.ts` | Internal mutations: `upsertConnection`, `refreshIfNeeded` |
-| `convex/athletes.ts` | Queries: `getStravaLinkStatus`, `getProfile` |
-| `components/auth/connect-strava-button.tsx` | Branded button |
-| `components/auth/auth-guard.tsx` | Convex auth + Strava link check |
-| `lib/strava/oauth.ts` | `buildAuthorizeUrl`, `exchangeCode`, `refreshTokens` |
-| `middleware.ts` | Protect `/dashboard/*` routes |
+| File                                        | Purpose                                                   |
+| ------------------------------------------- | --------------------------------------------------------- |
+| `app/api/auth/strava/route.ts`              | Build authorize URL, set state cookie, redirect           |
+| `app/api/auth/strava/callback/route.ts`     | Exchange code, store tokens, set session                  |
+| `convex/stravaTokens.ts`                    | Internal mutations: `upsertConnection`, `refreshIfNeeded` |
+| `convex/athletes.ts`                        | Queries: `getStravaLinkStatus`, `getProfile`              |
+| `components/auth/connect-strava-button.tsx` | Branded button                                            |
+| `components/auth/auth-guard.tsx`            | Convex auth + Strava link check                           |
+| `lib/strava/oauth.ts`                       | `buildAuthorizeUrl`, `exchangeCode`, `refreshTokens`      |
+| `middleware.ts`                             | Protect `/dashboard/*` routes                             |
 
 ## Implementation Sequence
 
