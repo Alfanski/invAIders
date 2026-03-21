@@ -21,7 +21,6 @@ import { computeActivityTrimp } from './lib/trimp';
 
 const TOKEN_REFRESH_BUFFER_SEC = 300;
 const MAX_BACKFILL_PAGES = 5;
-const MAX_BACKFILL_ANALYSIS = 5;
 
 // ---------------------------------------------------------------------------
 // Token refresh helper
@@ -223,18 +222,8 @@ export const backfillHistory = internalAction({
         athleteId: args.athleteId,
       });
 
-      // Trigger AI analysis for the most recent activities
-      const recentIds = insertedActivityIds.slice(0, MAX_BACKFILL_ANALYSIS);
-      for (const activityId of recentIds) {
-        await ctx.scheduler.runAfter(
-          ANALYSIS_DELAY_MS,
-          internal.stravaSync.triggerWorkoutAnalysis,
-          {
-            activityId,
-            athleteId: args.athleteId,
-          },
-        );
-      }
+      // Per-workout AI analysis is handled by the n8n pipeline (triggered via webhook).
+      // No need to schedule triggerWorkoutAnalysis here.
 
       await ctx.runMutation(internal.athletes.updateBackfillStatus, {
         athleteId: args.athleteId,
@@ -242,7 +231,7 @@ export const backfillHistory = internalAction({
       });
 
       console.log(
-        `Backfill: ${String(insertedActivityIds.length)} new of ${String(allActivities.length)} total for ${args.athleteId}, scheduling analysis for ${String(recentIds.length)} recent`,
+        `Backfill: ${String(insertedActivityIds.length)} new of ${String(allActivities.length)} total for ${args.athleteId}`,
       );
     } catch (err) {
       await ctx.runMutation(internal.athletes.updateBackfillStatus, {
@@ -296,64 +285,6 @@ export const computeFormSnapshots = internalAction({
     }
 
     console.log(`Computed ${String(series.length)} form snapshots for athlete ${args.athleteId}`);
-  },
-});
-
-// ---------------------------------------------------------------------------
-// triggerWorkoutAnalysis: POST to the LangChain analysis route.
-// Analysis is handled by the Next.js API route or the n8n pipeline.
-// ---------------------------------------------------------------------------
-
-const ANALYSIS_DELAY_MS = 5_000;
-
-export const triggerWorkoutAnalysis = internalAction({
-  args: {
-    activityId: v.id('activities'),
-    athleteId: v.id('athletes'),
-  },
-  handler: async (ctx, args) => {
-    const appUrl = process.env['APP_URL'];
-
-    if (!appUrl) {
-      console.warn(
-        `[trigger] APP_URL not set, skipping analysis trigger for ${args.activityId}. ` +
-          'Set APP_URL env var to enable LangChain analysis, or use the n8n pipeline.',
-      );
-      return;
-    }
-
-    const token = process.env['INTERNAL_API_TOKEN'] ?? '';
-    const url = `${appUrl}/api/ai/analyze-workout`;
-
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          activityId: args.activityId,
-          athleteId: args.athleteId,
-        }),
-      });
-
-      if (res.ok) {
-        const data = (await res.json()) as { status?: string; analysisId?: string };
-        console.log(
-          `[trigger] LangChain analysis complete for ${args.activityId}: ${data.analysisId ?? 'no-id'}`,
-        );
-      } else {
-        const errText = await res.text().catch(() => '');
-        console.warn(
-          `[trigger] LangChain route returned ${String(res.status)} for ${args.activityId}: ${errText.slice(0, 200)}`,
-        );
-      }
-    } catch (err) {
-      console.error(
-        `[trigger] HTTP call failed for ${args.activityId}: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
   },
 });
 
@@ -449,12 +380,8 @@ async function pollForAthlete(ctx: ActionCtx, athleteId: Id<'athletes'>): Promis
     );
     await ctx.scheduler.runAfter(0, internal.stravaSync.computeFormSnapshots, { athleteId });
 
-    for (const activityId of insertedActivityIds) {
-      await ctx.scheduler.runAfter(ANALYSIS_DELAY_MS, internal.stravaSync.triggerWorkoutAnalysis, {
-        activityId,
-        athleteId,
-      });
-    }
+    // Per-workout AI analysis is handled by the n8n pipeline (triggered via webhook).
+    // No need to schedule triggerWorkoutAnalysis here.
   }
 
   return false;
