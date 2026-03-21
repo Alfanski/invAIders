@@ -284,6 +284,100 @@ export const computeFormSnapshots = internalAction({
 });
 
 // ---------------------------------------------------------------------------
+// pollNewActivities: incremental fetch of activities since last known
+// Runs on a cron schedule. API cost: 1 call per athlete (typically).
+// ---------------------------------------------------------------------------
+
+export const pollNewActivities = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const athletes = await ctx.runQuery(internal.athletes.listAllInternal, {});
+    if (athletes.length === 0) return;
+
+    for (const athlete of athletes) {
+      if (athlete.formBackfillStatus !== 'complete') continue;
+
+      try {
+        const rateLimited = await pollForAthlete(ctx, athlete._id);
+        if (rateLimited) {
+          console.warn('Strava rate limit hit, stopping poll cycle early');
+          break;
+        }
+      } catch (err) {
+        console.error(
+          `Poll failed for athlete ${athlete._id}:`,
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    }
+  },
+});
+
+/** Returns true if rate-limited (caller should stop polling other athletes). */
+async function pollForAthlete(ctx: ActionCtx, athleteId: Id<'athletes'>): Promise<boolean> {
+  const pollState = await ctx.runQuery(internal.stravaPollState.getForAthlete, { athleteId });
+  const after = pollState?.lastActivityStartTime ?? 0;
+
+  let token: string;
+  try {
+    token = await getValidAccessToken(ctx, athleteId);
+  } catch {
+    console.warn(`Skipping poll for ${athleteId}: token error`);
+    return false;
+  }
+
+  let activities: StravaActivitySummary[];
+  try {
+    activities = await fetchActivitiesList(token, { after, perPage: 200 });
+  } catch (err) {
+    if (err instanceof StravaRateLimitError) return true;
+    throw err;
+  }
+
+  if (activities.length === 0) return false;
+
+  const existingIds = new Set(
+    await ctx.runQuery(internal.activities.listStravaIdsForAthlete, { athleteId }),
+  );
+
+  const athlete = await ctx.runQuery(internal.athletes.getById, { athleteId });
+  const athleteProfile: AthleteProfile = {
+    ...(athlete?.sex ? { sex: athlete.sex } : {}),
+    ...(athlete?.restingHr != null ? { restingHr: athlete.restingHr } : {}),
+    ...(athlete?.maxHr != null ? { maxHr: athlete.maxHr } : {}),
+  };
+
+  let maxStartEpoch = after;
+  let inserted = 0;
+
+  for (const activity of activities) {
+    if (existingIds.has(String(activity.id))) continue;
+
+    await ctx.runMutation(
+      internal.activities.upsertFromStrava,
+      buildActivityArgs(athleteId, activity, athleteProfile),
+    );
+    inserted++;
+
+    const startEpoch = Math.floor(new Date(activity.start_date).getTime() / 1000);
+    if (startEpoch > maxStartEpoch) maxStartEpoch = startEpoch;
+  }
+
+  await ctx.runMutation(internal.stravaPollState.update, {
+    athleteId,
+    lastActivityStartTime: maxStartEpoch,
+    lastPollAt: Math.floor(Date.now() / 1000),
+  });
+
+  if (inserted > 0) {
+    console.log(`Poll: inserted ${String(inserted)} new activities for ${athleteId}`);
+    await ctx.scheduler.runAfter(0, internal.stravaSync.computeFormSnapshots, { athleteId });
+  }
+
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // fetchStreamsOnDemand: fetch + downsample streams for a single activity
 // Called when user views a workout that has no streams yet.
 // API cost: 1 call
