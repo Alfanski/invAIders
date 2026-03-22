@@ -668,7 +668,7 @@
             <span class="chip">Next.js</span>
             <span class="chip green">Convex</span>
             <span class="chip amber">n8n</span>
-            <span class="chip rose">Gemini</span>
+            <span class="chip rose">Groq</span>
             <span class="chip blue">Strava API</span>
             <span class="chip">Cursor</span>
           </div>
@@ -805,7 +805,7 @@
                 <div>
                   <div style="font-weight: 600; font-size: 0.85rem; color: #fff">Coach Agent</div>
                   <div style="font-size: 0.6rem; color: var(--text-dim)">
-                    Gemini 2.5 Flash + 9 Tools
+                    Groq · Llama 3.3 70B + 9 Tools
                   </div>
                 </div>
               </div>
@@ -912,7 +912,7 @@
                   <span class="pricing-value">$15/mo</span>
                 </div>
                 <div class="pricing-row">
-                  <span class="pricing-label">Gemini API (analysis + chat)</span>
+                  <span class="pricing-label">Groq API (analysis + chat)</span>
                   <span class="pricing-value" style="color: var(--rose)">~$0.80</span>
                 </div>
                 <div class="pricing-row">
@@ -1097,9 +1097,9 @@
               <div class="glass-card" style="padding: 1rem 1.25rem">
                 <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.35rem">Why now?</h3>
                 <p style="font-size: 0.85rem">
-                  Gemini 2.5 Flash makes structured coaching analysis fast and cheap
-                  ($0.01/workout). LangChain tool calling enables real agentic coaching. Strava's
-                  webhook API unlocks zero-click automation. This wasn't possible 12 months ago.
+                  Groq's Llama 3.3 70B makes structured coaching analysis fast and free-tier
+                  friendly. LangChain tool calling enables real agentic coaching. Strava's webhook
+                  API unlocks zero-click automation. This wasn't possible 12 months ago.
                 </p>
               </div>
             </div>
@@ -1231,8 +1231,8 @@
             </div>
             <div class="flow-arrow">&rarr;</div>
             <div class="flow-node">
-              <div class="node-label">Google</div>
-              <div class="node-title">Gemini AI</div>
+              <div class="node-label">Groq</div>
+              <div class="node-title">Llama 3.3</div>
             </div>
             <div class="flow-arrow">&rarr;</div>
             <div class="flow-node">
@@ -1278,8 +1278,8 @@
               </div>
               <h3 style="font-size: 0.95rem; margin-bottom: 0.4rem">Analyze</h3>
               <p style="font-size: 0.8rem">
-                n8n fetches activity + streams, downsamples to ~500 points, runs two-stage Gemini
-                analysis.
+                n8n fetches activity + streams, downsamples to ~500 points, runs two-stage LLM
+                analysis via Groq.
               </p>
             </div>
             <div class="glass-card">
@@ -1350,7 +1350,7 @@
               <div class="pipeline-step">
                 <div class="step-num">5</div>
                 <div class="step-content">
-                  <h4>Two-Stage Gemini Analysis</h4>
+                  <h4>Two-Stage LLM Analysis</h4>
                   <p style="font-size: 0.8rem">
                     Scout classifies workout. Coach produces structured coaching JSON.
                   </p>
@@ -1445,8 +1445,8 @@
             <div class="flex-col" style="gap: 0.75rem; justify-content: center">
               <p style="font-size: 0.9rem; line-height: 1.6">
                 The coach is a
-                <strong style="color: #fff">LangChain-powered agentic loop</strong> backed by Gemini
-                2.5 Flash. It doesn't hallucinate numbers -- it queries real workout data through
+                <strong style="color: #fff">LangChain-powered agentic loop</strong> backed by Groq
+                (Llama 3.3 70B). It doesn't hallucinate numbers -- it queries real workout data through
                 <strong style="color: #fff">9 structured tools</strong> connected to Convex.
               </p>
               <div class="glass-card" style="padding: 0.75rem 1rem">
@@ -1584,7 +1584,7 @@
                 class="glass-card"
                 style="border-left: 3px solid var(--accent); padding: 0.85rem 1.25rem"
               >
-                <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem">Frontend -- Next.js 14</h3>
+                <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem">Frontend -- Next.js 16</h3>
                 <p style="font-size: 0.8rem; line-height: 1.4">
                   App Router. Server-side auth. Three dashboard tabs. Custom glassmorphism design
                   system. Recharts. Pure Tailwind v4.
@@ -1616,12 +1616,11 @@
                 class="glass-card"
                 style="border-left: 3px solid var(--rose); padding: 0.85rem 1.25rem"
               >
-                <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem">AI Layer -- Gemini</h3>
+                <h3 style="font-size: 0.9rem; margin-bottom: 0.3rem">AI Layer -- Groq</h3>
                 <p style="font-size: 0.8rem; line-height: 1.4">
-                  <strong style="color: #fff">Gemini 2.0 Flash</strong> for pipeline analysis
-                  (structured JSON, low temp).
-                  <strong style="color: #fff">Gemini 2.5 Flash</strong> for interactive coach
-                  (LangChain tool calling).
+                  <strong style="color: #fff">Llama 3.3 70B</strong> via Groq for pipeline analysis
+                  (structured JSON, low temp) and interactive coach (LangChain tool calling).
+                  OpenAI-compatible API -- provider-swappable.
                 </p>
               </div>
               <div
