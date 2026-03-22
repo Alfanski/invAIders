@@ -148,3 +148,14 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 4. Graceful degradation: if no `voiceSummary`, fallback path sets status to `complete` directly
 5. Binary data flow in n8n: Get Upload URL first (stores URL), then ElevenLabs TTS (returns binary), then Upload Audio references URL from a prior node via `$('Get Upload URL').first().json.uploadUrl`
 6. ElevenLabs free tier: 10K chars/month, variables `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` as n8n Cloud variables
+
+## 2026-03-22 - n8n Workflow Deploy Gap
+
+**Context**: Voice debrief n8n workflow never deployed because initial commit failed CI (Prettier), and all subsequent commits didn't touch `n8n/` files
+**Correction**: Deploy pipeline's n8n step checks `git diff --name-only $before $sha | grep '^n8n/'` -- only detects changes in the current push range
+**Root cause**: If a commit that changes `n8n/` files fails CI, the workflow is never pushed. Subsequent commits that fix CI but don't touch `n8n/` won't trigger the push.
+**Fix applied**:
+
+1. When debugging "feature not working in prod", always check if the deploy pipeline succeeded for the commit that introduced the feature
+2. n8n API rejects many fields as read-only (`id`, `active`, `tags`, `updatedAt`, `createdAt`). Use a whitelist approach: keep only `name`, `nodes`, `connections`, `settings`, `staticData`, `pinData`
+3. To force-deploy n8n workflows after a gap, touch any file under `n8n/` and push
