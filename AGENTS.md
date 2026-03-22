@@ -109,7 +109,7 @@ Two workflows in `.github/workflows/`:
 
 - **Endpoint:** `https://maicoach.vercel.app/api/webhooks/strava`
 - **Route:** `app/api/webhooks/strava/route.ts`
-- **Subscription ID:** `336243`
+- **Subscription ID:** `336266`
 - **Verify token:** stored in `STRAVA_WEBHOOK_VERIFY_TOKEN` env var
 
 **GET** — Strava subscription validation (hub challenge handshake).
