@@ -538,94 +538,320 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [[{ "node": "Get Token", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Token": {
-      "main": [[{ "node": "Fetch Activity", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Fetch Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Activity": {
-      "main": [[{ "node": "Has Streams?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Has Streams?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Has Streams?": {
       "main": [
-        [{ "node": "Fetch Streams", "type": "main", "index": 0 }],
-        [{ "node": "Empty Streams", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Fetch Streams",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empty Streams",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Fetch Streams": {
-      "main": [[{ "node": "Upsert Activity", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upsert Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Empty Streams": {
-      "main": [[{ "node": "Upsert Activity", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upsert Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Upsert Activity": {
-      "main": [[{ "node": "Set Status Analyzing", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Set Status Analyzing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Set Status Analyzing": {
-      "main": [[{ "node": "Code Downsample", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Code Downsample",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code Downsample": {
-      "main": [[{ "node": "Wait Before Scout", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Wait Before Scout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Wait Before Scout": {
-      "main": [[{ "node": "Scout LLM", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Scout LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Scout LLM": {
-      "main": [[{ "node": "Code Build Prompt", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Code Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code Build Prompt": {
-      "main": [[{ "node": "Wait Before Analysis", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Wait Before Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Wait Before Analysis": {
-      "main": [[{ "node": "Analysis LLM", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Analysis LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Analysis LLM": {
-      "main": [[{ "node": "Code Parse Analysis", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Code Parse Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code Parse Analysis": {
-      "main": [[{ "node": "Store Analysis", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Store Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Store Analysis": {
-      "main": [[{ "node": "Has Voice Summary?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Has Voice Summary?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Has Voice Summary?": {
       "main": [
-        [{ "node": "Get Upload URL", "type": "main", "index": 0 }],
-        [{ "node": "Set Status Complete Fallback", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Upload URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Status Complete Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Upload URL": {
-      "main": [[{ "node": "Resolve Voice", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Resolve Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Resolve Voice": {
-      "main": [[{ "node": "ElevenLabs TTS", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "ElevenLabs TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "ElevenLabs TTS": {
-      "main": [[{ "node": "Upload Audio", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upload Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Upload Audio": {
-      "main": [[{ "node": "Save Voice Debrief", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Save Voice Debrief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Save Voice Debrief": {
-      "main": [[{ "node": "Pipeline Complete", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Pipeline Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Set Status Complete Fallback": {
-      "main": [[{ "node": "Pipeline Complete", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Pipeline Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Pipeline Complete": {
-      "main": [[{ "node": "Build Email HTML", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Email HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Build Email HTML": {
-      "main": [[{ "node": "Has Email?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Has Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Has Email?": {
-      "main": [[{ "node": "Send Notification Email", "type": "main", "index": 0 }], []]
+      "main": [
+        [
+          {
+            "node": "Send Notification Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
     },
     "Error Trigger": {
-      "main": [[{ "node": "Log Error", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "updatedAt": "2026-03-22T10:30:00.000Z"
 }
