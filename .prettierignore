@@ -8,6 +8,9 @@ pnpm-lock.yaml
 package-lock.json
 next-env.d.ts
 
+# Presentation HTML (hand-crafted layout, not source code)
+docs/presentation.html
+
 # Framework and agent skill files (not project source)
 .agents/
 .cursor/skills/
