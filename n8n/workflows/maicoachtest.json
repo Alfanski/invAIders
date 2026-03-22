@@ -319,7 +319,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const personality = $('Get Token').first().json.coachPersonality || 'default';\n\nconst voiceMap = {\n  'motivator': 'TX3LPaxmHKxFdv7VOQHJ',\n  'analyst': 'onwK4e9ZLuTAKqWW03F9',\n  'zen': 'SAz9YHcvj6GT2YYXdXww',\n  'drill-sergeant': 'pNInz6obpgDQGcFmaJgB',\n  'buddy': 'iP95p4xoKVk53GoZ742B',\n  'default': 'cjVigY5qzO86Huf0OWal'\n};\n\nconst voiceId = voiceMap[personality] || voiceMap['default'];\n\nreturn [{ json: { voiceId, personality } }];"
+        "jsCode": "// v2 - personality-based voice selection\nconst personality = $('Get Token').first().json.coachPersonality || 'default';\n\nconst voiceMap = {\n  'motivator': 'TX3LPaxmHKxFdv7VOQHJ',\n  'analyst': 'onwK4e9ZLuTAKqWW03F9',\n  'zen': 'SAz9YHcvj6GT2YYXdXww',\n  'drill-sergeant': 'pNInz6obpgDQGcFmaJgB',\n  'buddy': 'iP95p4xoKVk53GoZ742B',\n  'default': 'cjVigY5qzO86Huf0OWal'\n};\n\nconst voiceId = voiceMap[personality] || voiceMap['default'];\n\nreturn [{ json: { voiceId, personality } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -853,5 +853,5 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "updatedAt": "2026-03-22T10:30:00.000Z"
+  "tags": []
 }

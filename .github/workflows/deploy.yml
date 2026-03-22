@@ -119,12 +119,12 @@ jobs:
             workflow_id=$(python3 -c "import json; print(json.load(open('$file')).get('id',''))" 2>/dev/null || echo "")
             name=$(python3 -c "import json; print(json.load(open('$file')).get('name','unknown'))" 2>/dev/null || echo "unknown")
 
-            # n8n API treats 'id' and 'active' as read-only; strip them from the request body
+            # n8n API treats these fields as read-only; strip them from the request body
             tmpfile=$(mktemp)
             python3 -c "
           import json
           d = json.load(open('$file'))
-          for k in ['id', 'active']:
+          for k in ['id', 'active', 'updatedAt', 'createdAt']:
               d.pop(k, None)
           json.dump(d, open('$tmpfile', 'w'))
           "
