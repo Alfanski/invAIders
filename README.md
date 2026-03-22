@@ -217,6 +217,17 @@ Copy `.env.local.example` to `.env.local` and fill in the values.
 | `npm run n8n:credentials`      | List credential IDs on n8n Cloud         |
 | `npm run strava:test-activity` | Upload a test activity to Strava         |
 
+## Sponsor Tools & Credits
+
+This project uses the following hackathon sponsor tools:
+
+| Sponsor                             | Category       | How we use it                                                                                          |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| [Convex](https://convex.dev)        | Backend        | Real-time database, reactive subscriptions, file storage (voice audio), serverless functions           |
+| [n8n](https://n8n.io)               | Automation     | Orchestration pipeline — Strava webhook → fetch data → LLM analysis → voice generation → store results |
+| [ElevenLabs](https://elevenlabs.io) | Voice & Audio  | Text-to-speech for AI coaching voice debriefs (per-coach personality voice selection)                  |
+| [Cursor](https://cursor.com)        | Building (IDE) | AI-powered development with custom rules, skills, and compound engineering workflow                    |
+
 ## Documentation
 
 See [docs/index.md](docs/index.md) for the full documentation hub (PRDs, design docs, implementation plans).
