@@ -51,6 +51,26 @@ jobs:
           N8N_STRAVA_WEBHOOK_URL: ${{ secrets.N8N_STRAVA_WEBHOOK_URL }}
           APP_URL: ${{ secrets.APP_URL }}
 
+  sync-vercel-env:
+    name: Sync Vercel Env Vars
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync env vars to Vercel
+        run: bash scripts/sync-vercel-env.sh STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET SESSION_SECRET STRAVA_WEBHOOK_VERIFY_TOKEN N8N_STRAVA_WEBHOOK_URL GROQ_API_KEY
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          STRAVA_WEBHOOK_VERIFY_TOKEN: ${{ secrets.STRAVA_WEBHOOK_VERIFY_TOKEN }}
+          N8N_STRAVA_WEBHOOK_URL: ${{ secrets.N8N_STRAVA_WEBHOOK_URL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
   deploy-n8n:
     name: Deploy n8n Workflows
     needs: validate

@@ -78,25 +78,30 @@ Two workflows in `.github/workflows/`:
 
 - **`ci.yml`** — Runs `npm run validate` on pull requests to `main`.
 - **`deploy.yml`** — On push to `main`: validates, deploys Convex
-  (`scripts/deploy-prod.sh`), and pushes n8n workflow JSON (only when
+  (`scripts/deploy-prod.sh`), syncs env vars to Vercel
+  (`scripts/sync-vercel-env.sh`), and pushes n8n workflow JSON (only when
   `n8n/` files changed). Vercel deploys automatically via Git Integration.
 
 **Required GitHub Secrets** (repo → Settings → Secrets → Actions):
 
-| Secret                   | Purpose                      |
-| ------------------------ | ---------------------------- |
-| `CONVEX_DEPLOY_KEY`      | Convex production deploy key |
-| `STRAVA_CLIENT_ID`       | Convex env var               |
-| `STRAVA_CLIENT_SECRET`   | Convex env var               |
-| `GROQ_API_KEY`           | Convex env var (LLM)         |
-| `CONVEX_WEBHOOK_SECRET`  | Convex env var               |
-| `SESSION_SECRET`         | Convex env var               |
-| `ELEVENLABS_API_KEY`     | Convex env var               |
-| `ELEVENLABS_VOICE_ID`    | Convex env var               |
-| `N8N_STRAVA_WEBHOOK_URL` | Convex env var               |
-| `APP_URL`                | Convex env var               |
-| `N8N_BASE_URL`           | n8n Cloud instance URL       |
-| `N8N_API_KEY`            | n8n Cloud API key            |
+| Secret                        | Purpose                         |
+| ----------------------------- | ------------------------------- |
+| `CONVEX_DEPLOY_KEY`           | Convex production deploy key    |
+| `STRAVA_CLIENT_ID`            | Convex + Vercel env var         |
+| `STRAVA_CLIENT_SECRET`        | Convex + Vercel env var         |
+| `GROQ_API_KEY`                | Convex + Vercel env var (LLM)   |
+| `CONVEX_WEBHOOK_SECRET`       | Convex env var                  |
+| `SESSION_SECRET`              | Convex + Vercel env var         |
+| `ELEVENLABS_API_KEY`          | Convex env var                  |
+| `ELEVENLABS_VOICE_ID`         | Convex env var                  |
+| `N8N_STRAVA_WEBHOOK_URL`      | Convex + Vercel env var         |
+| `APP_URL`                     | Convex env var                  |
+| `STRAVA_WEBHOOK_VERIFY_TOKEN` | Vercel env var                  |
+| `N8N_BASE_URL`                | n8n Cloud instance URL          |
+| `N8N_API_KEY`                 | n8n Cloud API key               |
+| `VERCEL_TOKEN`                | Vercel API token (env var sync) |
+| `VERCEL_PROJECT_ID`           | Vercel project ID (`prj_...`)   |
+| `VERCEL_TEAM_ID`              | Vercel team ID (`team_...`)     |
 
 ### Strava Webhook
 
