@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from 'next/server';
  * Strava sends hub.mode, hub.verify_token, hub.challenge as query params.
  * Must respond 200 + JSON { "hub.challenge": "..." } within 2 seconds.
  */
-export function GET(request: NextRequest) {
+export function GET(request: NextRequest): NextResponse {
   const searchParams = request.nextUrl.searchParams;
   const mode = searchParams.get('hub.mode');
   const token = searchParams.get('hub.verify_token');
@@ -34,7 +34,7 @@ interface StravaWebhookEvent {
  * POST — Strava webhook event.
  * Must return 200 within 2 seconds; forward to n8n asynchronously.
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   const event = (await request.json()) as StravaWebhookEvent;
 
   console.log('[strava-webhook] Event received:', JSON.stringify(event));
