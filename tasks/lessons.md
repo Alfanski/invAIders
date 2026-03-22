@@ -109,6 +109,27 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 
 ## 2026-03-22 - Gotcha
 
+**Context**: n8n pipeline fails at "Get Token" with `No athlete found for Strava ID <id>`
+**Correction**: This is a recurring failure (seen in at least 4 separate debugging sessions). The n8n pipeline receives a Strava `owner_id` via the webhook and looks it up in Convex via `getByStravaAthleteId`. It fails when:
+
+1. The athlete completed OAuth on a **different Convex deployment** than the one n8n uses (e.g. preview vs production `NEXT_PUBLIC_CONVEX_URL`)
+2. A **manual/test webhook** is sent with a made-up or wrong `owner_id` instead of the real Strava athlete ID
+3. The athlete simply **never completed OAuth** through the app
+   **Root cause**: Strava webhooks carry `owner_id` (the numeric Strava athlete ID). The Convex `athletes` table must have a matching `stravaAthleteId` row, created when the user completes app OAuth. If Vercel preview/dev env vars point to a different Convex deployment than production, OAuth creates the athlete in the wrong database.
+   **Fix applied**: Three-part checklist:
+4. **Verify Convex alignment** — `NEXT_PUBLIC_CONVEX_URL` on all Vercel scopes (production, preview, development) must point to the same Convex deployment that n8n's `CONVEX_SITE_URL` uses
+5. **Complete OAuth through the app** — the user must log in via the deployed app so the athlete + tokens are created in the correct database
+6. **Use the real Strava athlete ID in manual tests** — get it from `GET /api/v3/athlete` (currently `948047812`), never guess or hardcode a wrong one
+
+## 2026-03-22 - Gotcha
+
+**Context**: Strava webhook not firing for API-uploaded activities
+**Correction**: After uploading a FIT file via the Strava API, the webhook to the Vercel endpoint did not fire automatically. Strava webhooks for file uploads can be delayed while Strava processes the file. Additionally, the webhook subscription must be verified as pointing to the correct callback URL (`maicoach.vercel.app`, not the old `coachagent.vercel.app`).
+**Root cause**: Strava webhook delivery for file uploads is not instant — it depends on Strava's async file processing. The subscription callback URL can also drift if re-registered. Always verify with `GET /api/v3/push_subscriptions`.
+**Fix applied**: When the webhook doesn't fire within ~2 minutes of an API upload, manually trigger the n8n pipeline by POSTing directly to the n8n webhook URL with `{ "stravaActivityId": "<id>", "ownerId": "<strava_athlete_id>", "eventTime": <unix_ts> }`. Always use the real Strava athlete ID (currently `948047812`).
+
+## 2026-03-22 - Gotcha
+
 **Context**: GitHub Actions `deploy.yml` n8n workflow push step failing with `JSONDecodeError`
 **Correction**: The `deploy-n8n` job in `.github/workflows/deploy.yml` sent the raw workflow JSON (including `id` and `active` fields) to the n8n PUT API. The n8n API returned HTTP 400 (`request/body/id is read-only`), but `curl -sf` silently swallowed the error body, producing empty output that Python's JSON parser then crashed on.
 **Root cause**: When the `sync.sh` script was fixed to strip read-only fields (`id`, `active`, `createdAt`, `updatedAt`), the same fix was not applied to the inline script in `deploy.yml`. Two copies of the same logic drifted out of sync.

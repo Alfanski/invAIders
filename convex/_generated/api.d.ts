@@ -22,6 +22,7 @@ import type * as http from "../http.js";
 import type * as lib_downsample from "../lib/downsample.js";
 import type * as lib_formMetrics from "../lib/formMetrics.js";
 import type * as lib_gemini from "../lib/gemini.js";
+import type * as lib_llm from "../lib/llm.js";
 import type * as lib_stravaApi from "../lib/stravaApi.js";
 import type * as lib_streamStats from "../lib/streamStats.js";
 import type * as lib_trimp from "../lib/trimp.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   "lib/downsample": typeof lib_downsample;
   "lib/formMetrics": typeof lib_formMetrics;
   "lib/gemini": typeof lib_gemini;
+  "lib/llm": typeof lib_llm;
   "lib/stravaApi": typeof lib_stravaApi;
   "lib/streamStats": typeof lib_streamStats;
   "lib/trimp": typeof lib_trimp;
