@@ -52,7 +52,7 @@ print(json.dumps({'key': os.environ['VAR_NAME'], 'value': os.environ['VAR_VALUE'
 
   if [ -n "${var_id}" ]; then
     echo "Updating ${var_name} (id: ${var_id})..."
-    http_code=$(curl -s -o /tmp/n8n_var_resp.json -w "%{http_code}" -X PATCH \
+    http_code=$(curl -s -o /tmp/n8n_var_resp.json -w "%{http_code}" -X PUT \
       -H "${AUTH_HEADER}" \
       -H "Content-Type: application/json" \
       -d "${payload}" \
