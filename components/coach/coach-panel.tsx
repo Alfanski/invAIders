@@ -15,11 +15,17 @@ interface CoachChatResponse {
   toolCallCount: number;
 }
 
+function extractActivityIdFromPath(pathname: string): string | undefined {
+  const match = /^\/dashboard\/workout\/(.+)$/.exec(pathname);
+  return match?.[1];
+}
+
 async function sendToCoachAPI(
   message: string,
   history: readonly CoachMessage[],
   route: string,
   routeDescription: string,
+  activityId?: string,
 ): Promise<string> {
   const res = await fetch('/api/ai/coach-chat', {
     method: 'POST',
@@ -27,7 +33,7 @@ async function sendToCoachAPI(
     body: JSON.stringify({
       message,
       history: history.map((m) => ({ role: m.role, text: m.text })),
-      context: { route, routeDescription },
+      context: { route, routeDescription, ...(activityId ? { activityId } : {}) },
     }),
   });
 
@@ -67,6 +73,8 @@ export function CoachPanel(): ReactNode {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevTranscriptRef = useRef('');
 
+  const activityId = extractActivityIdFromPath(pathname);
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isProcessing) return;
@@ -74,7 +82,13 @@ export function CoachPanel(): ReactNode {
       setProcessing(true);
       setChatError(null);
       try {
-        const response = await sendToCoachAPI(text.trim(), messages, pathname, routeContext);
+        const response = await sendToCoachAPI(
+          text.trim(),
+          messages,
+          pathname,
+          routeContext,
+          activityId,
+        );
         addCoachMessage(response);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Something went wrong';
@@ -92,6 +106,7 @@ export function CoachPanel(): ReactNode {
       messages,
       pathname,
       routeContext,
+      activityId,
     ],
   );
 
