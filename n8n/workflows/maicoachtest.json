@@ -330,23 +330,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $json.voiceId }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "xi-api-key",
-              "value": "={{ $vars.ELEVENLABS_API_KEY }}"
-            },
-            {
-              "name": "Accept",
-              "value": "audio/mpeg"
-            }
-          ]
-        },
+        "url": "=https://maicoach.vercel.app/api/pipeline/tts",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: $('Code Parse Analysis').first().json.analysis.voiceSummary, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.2, use_speaker_boost: true } }) }}",
+        "jsonBody": "={{ JSON.stringify({ secret: $vars.CONVEX_WEBHOOK_SECRET, text: $('Code Parse Analysis').first().json.analysis.voiceSummary, voiceId: $json.voiceId }) }}",
         "options": {
           "response": {
             "response": {

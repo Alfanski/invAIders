@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Sync env vars to Vercel
-        run: bash scripts/sync-vercel-env.sh STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET SESSION_SECRET STRAVA_WEBHOOK_VERIFY_TOKEN N8N_STRAVA_WEBHOOK_URL GROQ_API_KEY CONVEX_WEBHOOK_SECRET INTERNAL_API_TOKEN
+        run: bash scripts/sync-vercel-env.sh STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET SESSION_SECRET STRAVA_WEBHOOK_VERIFY_TOKEN N8N_STRAVA_WEBHOOK_URL GROQ_API_KEY CONVEX_WEBHOOK_SECRET INTERNAL_API_TOKEN ELEVENLABS_API_KEY
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -72,6 +72,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           CONVEX_WEBHOOK_SECRET: ${{ secrets.CONVEX_WEBHOOK_SECRET }}
           INTERNAL_API_TOKEN: ${{ secrets.INTERNAL_API_TOKEN }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
 
   sync-n8n-env:
     name: Sync n8n Variables

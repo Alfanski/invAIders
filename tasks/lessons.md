@@ -159,3 +159,10 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 1. When debugging "feature not working in prod", always check if the deploy pipeline succeeded for the commit that introduced the feature
 2. n8n API rejects many fields as read-only (`id`, `active`, `tags`, `updatedAt`, `createdAt`). Use a whitelist approach: keep only `name`, `nodes`, `connections`, `settings`, `staticData`, `pinData`
 3. To force-deploy n8n workflows after a gap, touch any file under `n8n/` and push
+
+## 2026-03-22 - Gotcha
+
+**Context**: n8n pipeline failing on ElevenLabs TTS node with "Unusual activity detected. Free Tier usage disabled."
+**Correction**: ElevenLabs blocks free-tier API calls from known cloud/proxy IPs. n8n Cloud's shared infrastructure IPs are flagged. The same API key works from other IPs (confirmed with local curl and Vercel).
+**Root cause**: ElevenLabs' abuse detection flags requests from cloud provider IPs commonly used to create multiple free accounts. n8n Cloud runs on shared infrastructure whose IPs are on ElevenLabs' block list.
+**Fix applied**: Created a Vercel API route (`/api/pipeline/tts`) that proxies ElevenLabs TTS calls. n8n now calls the Vercel endpoint (which holds `ELEVENLABS_API_KEY`) instead of ElevenLabs directly. Updated `deploy.yml` to sync `ELEVENLABS_API_KEY` to Vercel. **Rule**: when a third-party API blocks cloud IPs on free tier, proxy the call through a different provider (e.g. Vercel) rather than upgrading to a paid plan.
