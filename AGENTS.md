@@ -79,7 +79,8 @@ Two workflows in `.github/workflows/`:
 - **`ci.yml`** — Runs `npm run validate` on pull requests to `main`.
 - **`deploy.yml`** — On push to `main`: validates, deploys Convex
   (`scripts/deploy-prod.sh`), syncs env vars to Vercel
-  (`scripts/sync-vercel-env.sh`), and pushes n8n workflow JSON (only when
+  (`scripts/sync-vercel-env.sh`), syncs variables to n8n Cloud
+  (`scripts/sync-n8n-env.sh`), and pushes n8n workflow JSON (only when
   `n8n/` files changed). Vercel deploys automatically via Git Integration.
 
 **Required GitHub Secrets** (repo → Settings → Secrets → Actions):
