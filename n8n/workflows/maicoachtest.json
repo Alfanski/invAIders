@@ -63,16 +63,17 @@
           "conditions": [
             {
               "id": "has-start-latlng",
-              "leftValue": "={{ $json.start_latlng }}",
-              "rightValue": "",
+              "leftValue": "={{ Array.isArray($json.start_latlng) && $json.start_latlng.length > 0 }}",
+              "rightValue": true,
               "operator": {
-                "type": "array",
-                "operation": "notEmpty"
+                "type": "boolean",
+                "operation": "true"
               }
             }
           ],
           "combinator": "and"
         },
+        "looseTypeValidation": true,
         "options": {}
       },
       "type": "n8n-nodes-base.if",
