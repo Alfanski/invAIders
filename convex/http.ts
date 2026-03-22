@@ -211,7 +211,7 @@ http.route({
     try {
       const analysisId = await ctx.runMutation(internal.analyses.upsertForActivity, {
         activityId,
-        model: anal['model'] ? String(anal['model']) : 'gemini-2.0-flash',
+        model: anal['model'] ? String(anal['model']) : 'gemini-2.5-flash',
         executiveSummary: String(anal['executiveSummary'] ?? ''),
         positives: Array.isArray(body.analysis['positives'])
           ? (body.analysis['positives'] as string[]).map(String)

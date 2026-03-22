@@ -4,7 +4,7 @@
  */
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 interface GeminiMessage {
   role: 'user' | 'model';
@@ -23,8 +23,13 @@ interface GeminiGenerateRequest {
   };
 }
 
+interface GeminiPart {
+  text?: string;
+  thought?: boolean;
+}
+
 interface GeminiCandidate {
-  content: { parts: { text: string }[] };
+  content: { parts: GeminiPart[] };
   finishReason: string;
 }
 
@@ -47,6 +52,18 @@ function getApiKey(): string {
   const key = process.env['GEMINI_API_KEY'];
   if (!key) throw new Error('GEMINI_API_KEY environment variable is not set');
   return key;
+}
+
+/**
+ * Gemini 2.5 models return thinking parts alongside the actual response.
+ * Extract the last non-thought part's text.
+ */
+function extractResponseText(parts: GeminiPart[]): string | undefined {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i];
+    if (part && !part.thought && part.text) return part.text;
+  }
+  return parts[0]?.text;
 }
 
 export async function generateText(
@@ -94,7 +111,7 @@ export async function generateText(
   }
 
   const candidate = data.candidates?.[0];
-  const text = candidate?.content.parts[0]?.text;
+  const text = candidate ? extractResponseText(candidate.content.parts) : undefined;
   if (!text) {
     throw new GeminiError(500, 'Gemini returned empty response');
   }
@@ -148,7 +165,7 @@ export async function generateJSON<T>(
   }
 
   const candidate = data.candidates?.[0];
-  const text = candidate?.content.parts[0]?.text;
+  const text = candidate ? extractResponseText(candidate.content.parts) : undefined;
   if (!text) {
     throw new GeminiError(500, 'Gemini returned empty response');
   }

@@ -6,6 +6,7 @@ coverage/
 convex/_generated/
 pnpm-lock.yaml
 package-lock.json
+next-env.d.ts
 
 # Framework and agent skill files (not project source)
 .agents/
