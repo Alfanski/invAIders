@@ -86,6 +86,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   let athleteName: string | undefined;
   let athleteGoal: string | undefined;
+  let coachPersonality: string | undefined;
 
   if (body.athleteId) {
     try {
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (profile) {
         athleteName = profile.firstName ?? undefined;
         athleteGoal = profile.goalText ?? undefined;
+        coachPersonality = profile.coachPersonality ?? undefined;
       }
     } catch {
       console.warn('[analyze-workout] Could not fetch athlete profile');
@@ -109,6 +111,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     activityId,
     athleteName,
     athleteGoal,
+    coachPersonality,
   });
 
   if (!result.ok) {

@@ -124,6 +124,7 @@ export const getProfileForAnalysis = query({
       restingHr: athlete.restingHr ?? null,
       maxHr: athlete.maxHr ?? null,
       goalText: athlete.goalText ?? null,
+      coachPersonality: athlete.coachPersonality ?? null,
       measurementPreference: athlete.measurementPreference ?? null,
     };
   },
@@ -146,6 +147,7 @@ export const getFullProfile = query({
       restingHr: athlete.restingHr ?? null,
       maxHr: athlete.maxHr ?? null,
       goalText: athlete.goalText ?? null,
+      coachPersonality: athlete.coachPersonality ?? null,
       measurementPreference: athlete.measurementPreference ?? null,
       timezone: athlete.timezone ?? null,
     };
@@ -160,6 +162,7 @@ export const updateProfile = mutation({
     heightCm: v.optional(v.number()),
     restingHr: v.optional(v.number()),
     maxHr: v.optional(v.number()),
+    coachPersonality: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { athleteId, ...fields } = args;

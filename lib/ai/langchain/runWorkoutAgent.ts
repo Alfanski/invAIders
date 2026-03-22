@@ -5,8 +5,10 @@ import type { StructuredToolInterface } from '@langchain/core/tools';
 import { workoutAnalysisSchema } from '@/types/workout-analysis';
 import type { WorkoutAnalysis } from '@/types/workout-analysis';
 
+import { getPersonalityPrompt } from '@/lib/coach-personalities';
+
 import {
-  ACTIVITY_ANALYSIS_SYSTEM_PROMPT,
+  buildActivityAnalysisSystemPrompt,
   buildActivityUserPrompt,
 } from '../prompts/activity-analysis';
 import { createModel } from './model';
@@ -28,6 +30,7 @@ export interface RunAgentInput {
   activityId: string;
   athleteName?: string | undefined;
   athleteGoal?: string | undefined;
+  coachPersonality?: string | undefined;
 }
 
 export interface AgentResult {
@@ -52,8 +55,9 @@ export async function runWorkoutAgent(
 
   let totalToolCalls = 0;
 
+  const personalityPrompt = getPersonalityPrompt(input.coachPersonality);
   const messages: BaseMessage[] = [
-    new SystemMessage(ACTIVITY_ANALYSIS_SYSTEM_PROMPT),
+    new SystemMessage(buildActivityAnalysisSystemPrompt(personalityPrompt)),
     new HumanMessage(buildActivityUserPrompt(input)),
   ];
 

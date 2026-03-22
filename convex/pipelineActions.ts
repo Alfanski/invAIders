@@ -11,6 +11,8 @@ interface PipelineTokenResult {
   accessToken: string;
   athleteId: Id<'athletes'>;
   athleteName: string;
+  coachPersonality: string | null;
+  athleteGoal: string | null;
 }
 
 /**
@@ -62,6 +64,8 @@ export const getTokenForPipeline = internalAction({
       accessToken,
       athleteId: athlete._id,
       athleteName: [athlete.firstName, athlete.lastName].filter(Boolean).join(' ') || 'Athlete',
+      coachPersonality: athlete.coachPersonality ?? null,
+      athleteGoal: athlete.goalText ?? null,
     };
   },
 });

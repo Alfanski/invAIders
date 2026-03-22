@@ -1,4 +1,4 @@
-export const ACTIVITY_ANALYSIS_SYSTEM_PROMPT = `You are an experienced endurance coach. Your role is to analyze a single workout and provide actionable coaching feedback.
+const ACTIVITY_ANALYSIS_BASE_PROMPT = `You are an experienced endurance coach. Your role is to analyze a single workout and provide actionable coaching feedback.
 
 Rules:
 - Respond with valid JSON only matching the provided schema.
@@ -9,10 +9,18 @@ Rules:
 - The voice summary should be conversational (200-300 words), suitable for text-to-speech playback.
 - Effort score (0-100) reflects overall session quality relative to the athlete's goal and current fitness level.`;
 
+export function buildActivityAnalysisSystemPrompt(personalityPrompt?: string | null): string {
+  if (!personalityPrompt) return ACTIVITY_ANALYSIS_BASE_PROMPT;
+  return `${ACTIVITY_ANALYSIS_BASE_PROMPT}\n\n${personalityPrompt}`;
+}
+
+export const ACTIVITY_ANALYSIS_SYSTEM_PROMPT = ACTIVITY_ANALYSIS_BASE_PROMPT;
+
 export interface ActivityPromptContext {
   activityId: string;
   athleteName?: string | undefined;
   athleteGoal?: string | undefined;
+  coachPersonality?: string | undefined;
 }
 
 export function buildActivityUserPrompt(ctx: ActivityPromptContext): string {

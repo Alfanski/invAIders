@@ -4,12 +4,29 @@ import { api, internal } from './_generated/api';
 import { action, internalAction } from './_generated/server';
 import { generateJSON, generateText, LLMError } from './lib/llm';
 
-const COACH_SYSTEM_PROMPT = `You are mAIcoach, an expert AI running and cycling coach.
+const COACH_SYSTEM_PROMPT_BASE = `You are mAIcoach, an expert AI running and cycling coach.
 You analyze workout data with the insight of an experienced coach, providing specific, actionable feedback.
 Be encouraging but honest. Use data to support your observations.
 Speak in first person as the coach. Keep language conversational but precise.
 Use metric units (km, min/km pace, bpm, meters elevation).
 Never fabricate data -- only reference numbers that appear in the provided context.`;
+
+const PERSONALITY_PROMPTS: Record<string, string> = {
+  motivator:
+    'Coaching style: High-energy motivator. Celebrate achievements enthusiastically. Use encouraging, upbeat language. Hype up PRs and breakthroughs. Frame setbacks as exciting challenges. Push the athlete to believe in their potential.',
+  analyst:
+    'Coaching style: Analytical and data-driven. Lead with metrics, percentages, and trends. Compare current performance to historical baselines. Highlight statistical patterns. Use precise language. Favor quantified observations over subjective assessments.',
+  zen: 'Coaching style: Calm and mindful. Emphasize balance, recovery, and sustainability over raw performance. Encourage listening to the body. Frame training as a journey. Use measured, thoughtful language. Value consistency over intensity.',
+  'drill-sergeant':
+    'Coaching style: Tough-love drill sergeant. Be blunt and direct. Call out laziness, missed targets, and poor pacing decisions without sugarcoating. Set high standards. Demand accountability. Use short, punchy sentences.',
+  buddy:
+    'Coaching style: Friendly training buddy. Use casual, conversational language. Share the excitement like a friend who just ran alongside them. Use humor and colloquialisms. Give advice the way a knowledgeable friend would over a post-run coffee.',
+};
+
+function buildCoachSystemPrompt(personality: string | undefined | null): string {
+  if (!personality || !PERSONALITY_PROMPTS[personality]) return COACH_SYSTEM_PROMPT_BASE;
+  return `${COACH_SYSTEM_PROMPT_BASE}\n\n${PERSONALITY_PROMPTS[personality]}`;
+}
 
 // -----------------------------------------------------------------------
 // analyzeWorkout + buildWorkoutPrompt — SUPERSEDED by n8n pipeline
@@ -106,7 +123,7 @@ ${hasExisting ? `## Previous Weekly Summary (refine and update with the new data
 
     try {
       const result = await generateJSON<WeeklySummaryResult>(prompt, {
-        systemPrompt: COACH_SYSTEM_PROMPT,
+        systemPrompt: buildCoachSystemPrompt(athlete?.coachPersonality),
         temperature: 0.4,
         maxTokens: 1024,
       });
@@ -197,7 +214,7 @@ ${lastActivity?.trimp ? `- Last activity TRIMP: ${String(Math.round(lastActivity
 
     try {
       const result = await generateJSON<DailyPlanResult>(prompt, {
-        systemPrompt: COACH_SYSTEM_PROMPT,
+        systemPrompt: buildCoachSystemPrompt(athlete.coachPersonality),
         temperature: 0.4,
         maxTokens: 1024,
       });
@@ -298,7 +315,7 @@ export const coachChat = action({
 
     try {
       const response = await generateText(prompt, {
-        systemPrompt: COACH_SYSTEM_PROMPT,
+        systemPrompt: buildCoachSystemPrompt(athlete?.coachPersonality),
         temperature: 0.5,
         maxTokens: 512,
       });

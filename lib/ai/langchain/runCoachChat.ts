@@ -3,7 +3,9 @@ import { type AIMessage, HumanMessage, SystemMessage } from '@langchain/core/mes
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 
-import { COACH_CHAT_SYSTEM_PROMPT } from '../prompts/coach-chat';
+import { getPersonalityPrompt } from '@/lib/coach-personalities';
+
+import { buildCoachChatSystemPrompt } from '../prompts/coach-chat';
 import type { ChatPromptContext } from '../prompts/coach-chat';
 import { createModel } from './model';
 import { getConvexClient } from './tools/convex-client';
@@ -24,7 +26,12 @@ export interface ChatResult {
   toolCallCount: number;
 }
 
-async function prefetchAthleteContext(athleteId: string): Promise<string> {
+interface AthleteContext {
+  text: string;
+  coachPersonality: string | null;
+}
+
+async function prefetchAthleteContext(athleteId: string): Promise<AthleteContext> {
   const convex = getConvexClient();
   const typedId = athleteId as Id<'athletes'>;
 
@@ -37,12 +44,14 @@ async function prefetchAthleteContext(athleteId: string): Promise<string> {
   ]);
 
   const parts: string[] = ['## Athlete Data (pre-fetched, do NOT call tools)'];
+  let coachPersonality: string | null = null;
 
   if (profile) {
     parts.push('\n### Profile');
     if (profile.firstName) parts.push(`- Name: ${profile.firstName}`);
     if (profile.sex) parts.push(`- Sex: ${profile.sex}`);
     if (profile.goalText) parts.push(`- Goal: ${profile.goalText}`);
+    coachPersonality = profile.coachPersonality ?? null;
   }
 
   if (formSnapshot) {
@@ -74,7 +83,7 @@ async function prefetchAthleteContext(athleteId: string): Promise<string> {
     parts.push('\n### Recent Activities\n- No activities found');
   }
 
-  return parts.join('\n');
+  return { text: parts.join('\n'), coachPersonality };
 }
 
 export async function runCoachChat(
@@ -90,10 +99,13 @@ export async function runCoachChat(
     };
   }
 
-  let athleteContext = '';
+  let athleteContextText = '';
+  let personalityPrompt: string | null = null;
   if (input.context.athleteId) {
     try {
-      athleteContext = await prefetchAthleteContext(input.context.athleteId);
+      const ctx = await prefetchAthleteContext(input.context.athleteId);
+      athleteContextText = ctx.text;
+      personalityPrompt = getPersonalityPrompt(ctx.coachPersonality);
     } catch (err) {
       console.warn(
         `[coach-chat] Failed to prefetch context: ${err instanceof Error ? err.message : String(err)}`,
@@ -104,13 +116,13 @@ export async function runCoachChat(
   const routeInfo = `The athlete is currently viewing: ${input.context.routeDescription}.`;
 
   const messages = [
-    new SystemMessage(COACH_CHAT_SYSTEM_PROMPT),
+    new SystemMessage(buildCoachChatSystemPrompt(personalityPrompt)),
     ...input.history.map((msg) =>
       msg.role === 'user'
         ? new HumanMessage(msg.text)
         : new SystemMessage(`[Previous coach response]: ${msg.text}`),
     ),
-    new HumanMessage(`${routeInfo}\n\n${athleteContext}\n\nAthlete says: ${input.message}`),
+    new HumanMessage(`${routeInfo}\n\n${athleteContextText}\n\nAthlete says: ${input.message}`),
   ];
 
   let response: AIMessage;

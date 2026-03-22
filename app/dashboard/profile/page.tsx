@@ -7,6 +7,7 @@ import type { ReactNode, SyntheticEvent } from 'react';
 
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { COACH_PERSONALITY_OPTIONS } from '@/lib/coach-personalities';
 import { ConnectPrompt } from '@/components/dashboard/connect-prompt';
 import { LoadingSkeleton } from '@/components/dashboard/loading-skeleton';
 import { useSession } from '@/components/providers/session-provider';
@@ -25,6 +26,7 @@ interface FormState {
   heightCm: string;
   restingHr: string;
   maxHr: string;
+  coachPersonality: string;
 }
 
 function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>): ReactNode {
@@ -37,6 +39,7 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
     heightCm: '',
     restingHr: '',
     maxHr: '',
+    coachPersonality: '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -50,6 +53,7 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
       heightCm: profile.heightCm != null ? String(profile.heightCm) : '',
       restingHr: profile.restingHr != null ? String(profile.restingHr) : '',
       maxHr: profile.maxHr != null ? String(profile.maxHr) : '',
+      coachPersonality: profile.coachPersonality ?? '',
     });
   }, [profile]);
 
@@ -64,6 +68,7 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
         const args: Parameters<typeof updateProfile>[0] = {
           athleteId,
           goalText: form.goalText,
+          ...(form.coachPersonality ? { coachPersonality: form.coachPersonality } : {}),
         };
         if (form.weightKg) args.weightKg = Number(form.weightKg);
         if (form.heightCm) args.heightCm = Number(form.heightCm);
@@ -172,6 +177,47 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
         </div>
       </section>
 
+      {/* Coach personality display */}
+      <section className="glass-panel border border-accent/20 p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/20">
+            <svg
+              className="h-4 w-4 text-accent"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+              />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-accent">
+              Coach Personality
+            </h3>
+            {profile?.coachPersonality ? (
+              <p className="mt-1.5 text-sm leading-relaxed text-glass-text">
+                {COACH_PERSONALITY_OPTIONS.find((p) => p.id === profile.coachPersonality)?.label ??
+                  'Custom'}{' '}
+                <span className="text-glass-text-muted">
+                  &mdash;{' '}
+                  {COACH_PERSONALITY_OPTIONS.find((p) => p.id === profile.coachPersonality)
+                    ?.tagline ?? ''}
+                </span>
+              </p>
+            ) : (
+              <p className="mt-1.5 text-sm leading-relaxed text-glass-text-muted">
+                No personality set -- your coach uses the default balanced style
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Edit form */}
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
         <section className="glass-panel p-5">
@@ -258,6 +304,46 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
                 className="mt-1 w-full rounded-xl bg-glass px-3 py-2 text-sm tabular-nums text-glass-text placeholder-glass-text-dim outline-none ring-1 ring-glass-border transition-shadow focus:ring-accent/40"
               />
             </label>
+          </div>
+
+          {/* Coach personality */}
+          <div className="mt-6">
+            <span className="text-xs font-medium text-glass-text-muted">Coach Personality</span>
+            <p className="mt-0.5 text-[10px] text-glass-text-dim">
+              Choose how your AI coach communicates with you
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {COACH_PERSONALITY_OPTIONS.map((personality) => {
+                const isSelected = form.coachPersonality === personality.id;
+                return (
+                  <button
+                    key={personality.id}
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({
+                        ...prev,
+                        coachPersonality:
+                          prev.coachPersonality === personality.id ? '' : personality.id,
+                      }));
+                    }}
+                    className={`rounded-xl p-3 text-left transition-all ${
+                      isSelected
+                        ? 'bg-accent/20 ring-1 ring-accent/40'
+                        : 'bg-glass hover:bg-glass-hover ring-1 ring-glass-border'
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-medium ${isSelected ? 'text-accent' : 'text-glass-text'}`}
+                    >
+                      {personality.label}
+                    </span>
+                    <p className="mt-0.5 text-[11px] text-glass-text-muted">
+                      {personality.tagline}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 

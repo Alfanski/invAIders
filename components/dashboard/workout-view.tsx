@@ -165,7 +165,7 @@ export function WorkoutView({
 
     if (sportCfg.showPower && stats.averageWatts > 0) {
       result.push({
-        key: 'effort' as const,
+        key: 'power' as const,
         label: 'Avg Power',
         value: `${String(Math.round(stats.averageWatts))} W`,
         unit: 'W',

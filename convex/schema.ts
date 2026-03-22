@@ -25,6 +25,7 @@ export default defineSchema({
     goalText: v.optional(v.string()),
     restingHr: v.optional(v.number()),
     maxHr: v.optional(v.number()),
+    coachPersonality: v.optional(v.string()),
     timezone: v.optional(v.string()),
     formBackfillStatus: v.optional(
       v.union(v.literal('idle'), v.literal('running'), v.literal('complete'), v.literal('error')),

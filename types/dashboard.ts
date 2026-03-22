@@ -30,6 +30,7 @@ export type MetricKey =
   | 'pace'
   | 'elevation'
   | 'cadence'
+  | 'power'
   | 'distance'
   | 'duration'
   | 'calories'
