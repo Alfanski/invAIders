@@ -166,3 +166,17 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 **Correction**: ElevenLabs blocks free-tier API calls from known cloud/proxy IPs. n8n Cloud's shared infrastructure IPs are flagged. The same API key works from other IPs (confirmed with local curl and Vercel).
 **Root cause**: ElevenLabs' abuse detection flags requests from cloud provider IPs commonly used to create multiple free accounts. n8n Cloud runs on shared infrastructure whose IPs are on ElevenLabs' block list.
 **Fix applied**: Created a Vercel API route (`/api/pipeline/tts`) that proxies ElevenLabs TTS calls. n8n now calls the Vercel endpoint (which holds `ELEVENLABS_API_KEY`) instead of ElevenLabs directly. Updated `deploy.yml` to sync `ELEVENLABS_API_KEY` to Vercel. **Rule**: when a third-party API blocks cloud IPs on free tier, proxy the call through a different provider (e.g. Vercel) rather than upgrading to a paid plan.
+
+## 2026-03-22 - Pattern
+
+**Context**: Voice debrief architecture change — ElevenLabs TTS moved from direct n8n call to Vercel proxy
+**Correction**: N/A (architecture change driven by infrastructure constraint)
+**Root cause**: The original design had n8n calling ElevenLabs directly (`POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}` with `xi-api-key` header). This worked in development but failed in production because n8n Cloud's shared IP addresses are on ElevenLabs' free-tier block list. The API key and request format were correct — the issue was purely IP-based.
+**Fix applied**: Moved the ElevenLabs API call from n8n to a Vercel serverless function (`/api/pipeline/tts`). The n8n workflow now sends `{ secret, text, voiceId }` to Vercel, which forwards the call to ElevenLabs using `ELEVENLABS_API_KEY` stored in Vercel env vars. Vercel's IPs are not flagged by ElevenLabs. Key architectural changes:
+
+1. New Vercel route `app/api/pipeline/tts/route.ts` — accepts JSON, calls ElevenLabs, returns binary `audio/mpeg`
+2. n8n "ElevenLabs TTS" node URL changed from `api.elevenlabs.io` to `maicoach.vercel.app/api/pipeline/tts`
+3. Auth moved from `xi-api-key` header (n8n → ElevenLabs) to `secret` in JSON body (n8n → Vercel, validated against `CONVEX_WEBHOOK_SECRET`)
+4. `ELEVENLABS_API_KEY` now required on Vercel (added to `deploy.yml` sync-vercel-env step)
+5. `ELEVENLABS_API_KEY` no longer needed as n8n Cloud variable for TTS (still synced for potential future use)
+6. **Lesson**: when choosing where to place third-party API calls in a distributed pipeline (n8n vs Vercel vs Convex), consider IP reputation. Cloud orchestration platforms (n8n, Zapier) often share IPs across many tenants, making them targets for abuse detection on free-tier APIs.
