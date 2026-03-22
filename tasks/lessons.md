@@ -95,6 +95,20 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 
 ## 2026-03-22 - Gotcha
 
+**Context**: Deploying new Convex backend code after triggering an n8n pipeline run
+**Correction**: The n8n pipeline ran and stored an analysis at 00:52 UTC, which triggered `scheduleRegeneration` for the weekly summary. But the Convex backend was still running the old Gemini-based code (deployed 10 minutes later at 01:02 UTC). The weekly summary silently failed because it called the exhausted Gemini API.
+**Root cause**: When switching LLM providers, the n8n workflow was updated and pushed first, but the Convex backend wasn't redeployed before the test activity triggered the pipeline. Scheduled Convex actions run against the currently deployed code, not the code being developed locally.
+**Fix applied**: Always deploy Convex (`npx convex deploy`) BEFORE triggering any pipeline test that depends on the new code. Order of operations matters: deploy backend first, then test.
+
+## 2026-03-22 - Gotcha
+
+**Context**: Weekly summary generated successfully in Convex but not showing in dashboard UI
+**Correction**: The `weekStartLocal` key used to query the `weeklyAnalyses` table was computed differently on frontend vs backend. The frontend used `toISOString().slice(0, 10)` on a Date set to local midnight, which converts to UTC before formatting. In positive UTC offset timezones (e.g. CET = UTC+1), local midnight becomes the previous day in UTC, producing `"2026-03-15"` instead of `"2026-03-16"`.
+**Root cause**: `Date.toISOString()` always outputs UTC. When a Date is set to local midnight via `setHours(0,0,0,0)` and then formatted with `toISOString()`, the resulting date string can be off by one day in any timezone east of UTC. The Convex backend runs in UTC, so its `toISOString()` produces the correct date.
+**Fix applied**: Format the date using local getters (`getFullYear()`, `getMonth()`, `getDate()`) instead of `toISOString()` in `app/dashboard/week/page.tsx`. Rule: never use `toISOString().slice(0,10)` to get a "local date" string -- it gives a UTC date. Use local getters or a dedicated `formatLocalDate()` helper.
+
+## 2026-03-22 - Gotcha
+
 **Context**: GitHub Actions `deploy.yml` n8n workflow push step failing with `JSONDecodeError`
 **Correction**: The `deploy-n8n` job in `.github/workflows/deploy.yml` sent the raw workflow JSON (including `id` and `active` fields) to the n8n PUT API. The n8n API returned HTTP 400 (`request/body/id is read-only`), but `curl -sf` silently swallowed the error body, producing empty output that Python's JSON parser then crashed on.
 **Root cause**: When the `sync.sh` script was fixed to strip read-only fields (`id`, `active`, `createdAt`, `updatedAt`), the same fix was not applied to the inline script in `deploy.yml`. Two copies of the same logic drifted out of sync.

@@ -168,7 +168,11 @@ function WeekContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
   }, []);
 
   const weekStartLocal = useMemo(() => {
-    return thisWeek.start.toISOString().slice(0, 10);
+    const d = thisWeek.start;
+    const y = String(d.getFullYear());
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }, [thisWeek]);
 
   const weeklyAnalysis = useQuery(api.weeklyAnalyses.getForAthleteWeek, {
