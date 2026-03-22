@@ -5,16 +5,23 @@ import type { ReactNode } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 import { formatDuration } from '@/lib/units';
-import type { WeekData, WeekTotals } from '@/types/dashboard';
+import type { HeartRateZone, WeekData, WeekTotals } from '@/types/dashboard';
 
 import { DayDetail } from './day-detail';
 import { WeekDayBar } from './week-day-bar';
+import { ZoneDistribution } from './zone-distribution';
 
 interface WeekViewProps {
   week: WeekData;
+  heartRateStream?: readonly number[] | undefined;
+  heartRateZones?: readonly HeartRateZone[] | undefined;
 }
 
-export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
+export function WeekView({
+  week,
+  heartRateStream,
+  heartRateZones,
+}: Readonly<WeekViewProps>): ReactNode {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const handleSelect = useCallback((index: number) => {
@@ -123,6 +130,18 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
           </ResponsiveContainer>
         </div>
       </section>
+
+      {/* Heart rate zone distribution */}
+      {heartRateStream &&
+        heartRateStream.length > 0 &&
+        heartRateZones &&
+        heartRateZones.length > 0 && (
+          <ZoneDistribution
+            heartRateStream={heartRateStream}
+            zones={heartRateZones}
+            totalTimeSec={week.totals.durationSec}
+          />
+        )}
 
       {/* Day selector strip */}
       <WeekDayBar days={week.days} selectedIndex={selectedDay} onSelect={handleSelect} />

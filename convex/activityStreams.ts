@@ -78,6 +78,23 @@ export const getDownsampledForActivity = query({
   },
 });
 
+export const getHeartRateForActivities = query({
+  args: { activityIds: v.array(v.id('activities')) },
+  handler: async (ctx, args) => {
+    const allHr: number[] = [];
+    for (const activityId of args.activityIds) {
+      const stream = await ctx.db
+        .query('activityStreams')
+        .withIndex('by_activity', (q) => q.eq('activityId', activityId))
+        .first();
+      if (stream?.heartrateBpm) {
+        allHr.push(...stream.heartrateBpm);
+      }
+    }
+    return allHr;
+  },
+});
+
 export const getDownsampled = query({
   args: { activityId: v.id('activities') },
   handler: async (ctx, args) => {

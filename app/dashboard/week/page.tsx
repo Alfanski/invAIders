@@ -13,7 +13,13 @@ import { WeekView } from '@/components/dashboard/week-view';
 import { useSession } from '@/components/providers/session-provider';
 import { toBucket } from '@/lib/sport-config';
 import type { ActivityBucket } from '@/lib/sport-config';
-import type { DayActivity, DaySummary, WeekData, WeekTotals } from '@/types/dashboard';
+import type {
+  DayActivity,
+  DaySummary,
+  HeartRateZone,
+  WeekData,
+  WeekTotals,
+} from '@/types/dashboard';
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_SHORTS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -196,6 +202,29 @@ function WeekContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
     weekStartLocal,
   });
 
+  const weekActivityIds = useMemo(() => {
+    if (!activities) return [];
+    return (activities as ActivityDoc[])
+      .filter((a) => {
+        const d = new Date(a.startDate);
+        return d >= thisWeek.start && d <= thisWeek.end;
+      })
+      .map((a) => a._id);
+  }, [activities, thisWeek]);
+
+  const athleteZones = useQuery(api.athleteZones.getLatestZones, { athleteId });
+
+  const weekHrStream = useQuery(
+    api.activityStreams.getHeartRateForActivities,
+    weekActivityIds.length > 0 ? { activityIds: weekActivityIds } : 'skip',
+  );
+
+  const heartRateZones: readonly HeartRateZone[] | undefined = useMemo(() => {
+    const zones = athleteZones?.heartRateZones;
+    if (!zones || zones.length === 0) return undefined;
+    return zones;
+  }, [athleteZones]);
+
   const week = useMemo((): WeekData | null => {
     if (!activities) return null;
 
@@ -228,5 +257,11 @@ function WeekContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode {
     );
   }
 
-  return <WeekView week={week} />;
+  return (
+    <WeekView
+      week={week}
+      heartRateStream={weekHrStream ?? undefined}
+      heartRateZones={heartRateZones}
+    />
+  );
 }
