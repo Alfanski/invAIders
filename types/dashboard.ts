@@ -91,6 +91,20 @@ export interface HeartRateZone {
   max: number;
 }
 
+export interface DayActivity {
+  activityId: string;
+  name: string;
+  sportType: string;
+  activityBucket: ActivityBucket;
+  distanceKm: number;
+  durationSec: number;
+  paceSecPerKm?: number | undefined;
+  averageHeartRate?: number | undefined;
+  elevationGainM: number;
+  calories: number;
+  effort: number;
+}
+
 export interface DaySummary {
   dayLabel: string;
   dayShort: string;
@@ -107,6 +121,7 @@ export interface DaySummary {
   elevationGainM?: number | undefined;
   calories?: number | undefined;
   effort?: number | undefined;
+  activities?: DayActivity[] | undefined;
 }
 
 export interface WeekTotals {

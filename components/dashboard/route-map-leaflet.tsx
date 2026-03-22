@@ -4,9 +4,15 @@ import 'leaflet/dist/leaflet.css';
 
 import type { LatLngTuple } from 'leaflet';
 import L from 'leaflet';
+import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from 'react-leaflet';
+
+const TILE_URLS = {
+  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+} as const;
 
 interface RouteMapLeafletProps {
   latlng: readonly number[][];
@@ -26,6 +32,9 @@ function FitBounds({ positions }: { positions: LatLngTuple[] }): ReactNode {
 }
 
 export default function RouteMapLeaflet({ latlng }: Readonly<RouteMapLeafletProps>): ReactNode {
+  const { resolvedTheme } = useTheme();
+  const tileUrl = resolvedTheme === 'dark' ? TILE_URLS.dark : TILE_URLS.light;
+
   if (latlng.length < 2) return null;
 
   const positions: LatLngTuple[] = latlng.map(
@@ -43,10 +52,7 @@ export default function RouteMapLeaflet({ latlng }: Readonly<RouteMapLeafletProp
         zoomControl={false}
         attributionControl={false}
       >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          attribution="&copy; OpenStreetMap &copy; CARTO"
-        />
+        <TileLayer key={tileUrl} url={tileUrl} attribution="&copy; OpenStreetMap &copy; CARTO" />
         <Polyline
           positions={positions}
           pathOptions={{ color: '#6366f1', weight: 3, opacity: 0.9 }}

@@ -250,9 +250,11 @@ body {
   }
 }
 
-/* Leaflet map tiles — adapt filter to theme */
-.route-map .leaflet-tile-pane {
-  filter: var(--map-tile-filter);
+/* Suppress focus rings on Recharts SVG elements */
+.recharts-wrapper,
+.recharts-wrapper svg,
+.recharts-wrapper svg *:focus {
+  outline: none !important;
 }
 
 /* Hide scrollbar for suggestions */

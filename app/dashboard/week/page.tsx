@@ -13,7 +13,7 @@ import { WeekView } from '@/components/dashboard/week-view';
 import { useSession } from '@/components/providers/session-provider';
 import { toBucket } from '@/lib/sport-config';
 import type { ActivityBucket } from '@/lib/sport-config';
-import type { DaySummary, WeekData, WeekTotals } from '@/types/dashboard';
+import type { DayActivity, DaySummary, WeekData, WeekTotals } from '@/types/dashboard';
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_SHORTS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -127,6 +127,24 @@ function buildDays(activities: readonly ActivityDoc[], start: Date, end: Date): 
     const dayBucket: ActivityBucket = isMixed ? 'other' : (buckets.values().next().value ?? 'run');
     const paceSecPerKm = !isMixed && distanceKm > 0 ? totalTime / distanceKm : undefined;
 
+    const dayActivityDetails: DayActivity[] = dayActivities.map((a) => {
+      const dKm = a.distanceMeters / 1000;
+      const bucket = toBucket(a.sportType);
+      return {
+        activityId: a._id,
+        name: a.name,
+        sportType: a.sportType,
+        activityBucket: bucket,
+        distanceKm: Math.round(dKm * 10) / 10,
+        durationSec: a.movingTimeSec,
+        paceSecPerKm: dKm > 0 ? Math.round(a.movingTimeSec / dKm) : undefined,
+        averageHeartRate: a.averageHeartrate ? Math.round(a.averageHeartrate) : undefined,
+        elevationGainM: Math.round(a.totalElevationGainM ?? 0),
+        calories: Math.round(a.calories ?? 0),
+        effort: Math.round(a.trimp ?? a.sufferScore ?? 0),
+      };
+    });
+
     return {
       dayLabel: DAY_LABELS[dayOfWeek] ?? '',
       dayShort: DAY_SHORTS[dayOfWeek] ?? '',
@@ -135,10 +153,7 @@ function buildDays(activities: readonly ActivityDoc[], start: Date, end: Date): 
       activityId: primary._id,
       activityType: primary.sportType,
       activityBucket: dayBucket,
-      activityName:
-        dayActivities.length > 1
-          ? `${primary.name} + ${String(dayActivities.length - 1)} more`
-          : primary.name,
+      activityName: primary.name,
       distanceKm: Math.round(distanceKm * 10) / 10,
       durationSec: totalTime,
       paceSecPerKm: paceSecPerKm != null ? Math.round(paceSecPerKm) : undefined,
@@ -146,6 +161,7 @@ function buildDays(activities: readonly ActivityDoc[], start: Date, end: Date): 
       elevationGainM: Math.round(totalElev),
       calories: Math.round(totalCals),
       effort: Math.round(totalEffort),
+      activities: dayActivityDetails,
     };
   });
 }

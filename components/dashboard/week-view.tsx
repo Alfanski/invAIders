@@ -23,7 +23,8 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
 
   const barData = week.days.map((d, i) => ({
     name: d.dayShort,
-    distance: d.distanceKm ?? 0,
+    minutes: d.durationSec != null ? Math.round(d.durationSec / 60) : 0,
+    index: i,
     fill:
       selectedDay === i
         ? '#6366f1'
@@ -83,12 +84,24 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
         </div>
       </section>
 
-      {/* Distance bar chart */}
-      <section className="glass-panel p-4">
+      {/* Duration bar chart */}
+      <section className="glass-panel cursor-pointer p-4">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-glass-text-dim">
-          Daily Distance
+          Daily Time
         </h3>
-        <div className="h-32">
+        <div
+          className="h-32"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+          onClick={(e) => {
+            const svg = (e.currentTarget as HTMLElement).querySelector('.recharts-surface');
+            if (!svg) return;
+            const rect = svg.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const ratio = x / rect.width;
+            const idx = Math.min(Math.floor(ratio * 7), 6);
+            handleSelect(idx);
+          }}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <XAxis
@@ -103,9 +116,9 @@ export function WeekView({ week }: Readonly<WeekViewProps>): ReactNode {
                 tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(v: number) => `${String(v)} km`}
+                tickFormatter={(v: number) => `${String(v)}m`}
               />
-              <Bar dataKey="distance" radius={[4, 4, 0, 0]} maxBarSize={36} />
+              <Bar dataKey="minutes" radius={[4, 4, 0, 0]} maxBarSize={36} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 
 import { getSportConfig } from '@/lib/sport-config';
 import { formatDuration } from '@/lib/units';
-import type { DaySummary } from '@/types/dashboard';
+import type { DayActivity, DaySummary } from '@/types/dashboard';
 
 interface DayDetailProps {
   day: DaySummary;
@@ -32,8 +32,84 @@ function DetailRow({ label, value, color }: DetailRowProps): ReactNode {
   );
 }
 
+function ActivityCard({ activity }: { activity: DayActivity }): ReactNode {
+  const sportCfg = useMemo(
+    () => getSportConfig(activity.activityBucket),
+    [activity.activityBucket],
+  );
+
+  return (
+    <div className="glass-card p-4">
+      <div className="mb-3 flex items-start justify-between">
+        <h4 className="text-sm font-semibold text-glass-text">{activity.name}</h4>
+        <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+          {activity.sportType}
+        </span>
+      </div>
+
+      <div className="divide-y divide-glass-border">
+        {activity.distanceKm > 0 && (
+          <DetailRow label="Distance" value={`${activity.distanceKm.toFixed(1)} km`} />
+        )}
+        <DetailRow label="Duration" value={formatDuration(activity.durationSec)} />
+        {activity.paceSecPerKm !== undefined && (
+          <DetailRow
+            label={sportCfg.speedLabel}
+            value={sportCfg.formatSpeed(activity.paceSecPerKm)}
+            color="#34d399"
+          />
+        )}
+        {activity.averageHeartRate !== undefined && (
+          <DetailRow
+            label="Avg Heart Rate"
+            value={`${String(activity.averageHeartRate)} bpm`}
+            color="#f87171"
+          />
+        )}
+        {activity.elevationGainM > 0 && (
+          <DetailRow
+            label="Elevation Gain"
+            value={`${String(activity.elevationGainM)} m`}
+            color="#60a5fa"
+          />
+        )}
+        {activity.calories > 0 && (
+          <DetailRow label="Calories" value={`${String(activity.calories)} kcal`} />
+        )}
+        {activity.effort > 0 && (
+          <DetailRow
+            label="Training Load"
+            value={`${String(activity.effort)} TRIMP`}
+            color="#c084fc"
+          />
+        )}
+      </div>
+
+      <div className="mt-3 border-t border-glass-border pt-2.5">
+        <Link
+          href={`/dashboard/workout/${activity.activityId}`}
+          className="flex items-center justify-center gap-2 rounded-xl bg-accent/15 px-4 py-2 text-xs font-semibold text-accent transition hover:bg-accent/25"
+        >
+          View full workout
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function DayDetail({ day }: Readonly<DayDetailProps>): ReactNode {
   const sportCfg = useMemo(() => getSportConfig(day.activityBucket ?? 'run'), [day.activityBucket]);
+  const activities = day.activities ?? [];
+  const hasMultiple = activities.length > 1;
 
   if (!day.hasActivity) {
     return (
@@ -61,13 +137,26 @@ export function DayDetail({ day }: Readonly<DayDetailProps>): ReactNode {
     );
   }
 
+  if (hasMultiple) {
+    return (
+      <div className="space-y-3">
+        <p className="px-1 text-xs font-medium text-glass-text-dim">
+          {day.dayLabel}, {day.date} — {String(activities.length)} activities
+        </p>
+        {activities.map((a) => (
+          <ActivityCard key={a.activityId} activity={a} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="glass-panel p-5">
       <div className="mb-4 flex items-start justify-between">
         <div>
           <h4 className="text-base font-semibold text-glass-text">{day.activityName}</h4>
           <p className="mt-0.5 text-xs text-glass-text-muted">
-            {day.dayLabel}, {day.date} -- {day.activityType}
+            {day.dayLabel}, {day.date} — {day.activityType}
           </p>
         </div>
         <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
