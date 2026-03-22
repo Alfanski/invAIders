@@ -394,10 +394,55 @@ function generateFit(): { fitData: Buffer; distanceKm: number; durationMin: numb
 // Upload FIT to Strava
 // ---------------------------------------------------------------------------
 
+const RUN_ADJECTIVES = [
+  'Morning',
+  'Evening',
+  'Sunrise',
+  'Sunset',
+  'Midday',
+  'Early',
+  'Late',
+  'Quick',
+  'Steady',
+  'Brisk',
+];
+const RUN_NOUNS = [
+  'Run',
+  'Jog',
+  'Shakeout',
+  'Loop',
+  'Dash',
+  'Spin',
+  'Trot',
+  'Cruise',
+  'Stride',
+  'Effort',
+];
+const RUN_LOCATIONS = [
+  'through the Park',
+  'along the River',
+  'around the Lake',
+  'in the Hills',
+  'downtown',
+  'by the Canal',
+  'on the Trail',
+  'through the Woods',
+  'around the Block',
+  '',
+];
+
+function randomTitle(): string {
+  const adj = RUN_ADJECTIVES[Math.floor(Math.random() * RUN_ADJECTIVES.length)]!;
+  const noun = RUN_NOUNS[Math.floor(Math.random() * RUN_NOUNS.length)]!;
+  const loc = RUN_LOCATIONS[Math.floor(Math.random() * RUN_LOCATIONS.length)]!;
+  return loc ? `${adj} ${noun} ${loc}` : `${adj} ${noun}`;
+}
+
 async function uploadActivity(accessToken: string): Promise<void> {
   const { fitData, distanceKm, durationMin } = generateFit();
+  const name = randomTitle();
 
-  console.log('\n🏃 Uploading test activity with GPS + HR + cadence...');
+  console.log(`\n🏃 Uploading: "${name}"`);
   console.log(`   Distance: ${distanceKm.toFixed(1)} km`);
   console.log(`   Duration: ~${durationMin} min`);
 
@@ -406,6 +451,7 @@ async function uploadActivity(accessToken: string): Promise<void> {
   const preamble = Buffer.from(
     `--${boundary}\r\nContent-Disposition: form-data; name="data_type"\r\n\r\nfit\r\n` +
       `--${boundary}\r\nContent-Disposition: form-data; name="activity_type"\r\n\r\nrun\r\n` +
+      `--${boundary}\r\nContent-Disposition: form-data; name="name"\r\n\r\n${name}\r\n` +
       `--${boundary}\r\nContent-Disposition: form-data; name="description"\r\n\r\nAuto-generated test with HR/cadence/GPS from mAIcoach script\r\n` +
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="test-run.fit"\r\nContent-Type: application/octet-stream\r\n\r\n`,
   );
