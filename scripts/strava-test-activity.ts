@@ -155,8 +155,8 @@ async function authorize(clientId: string, clientSecret: string): Promise<Strava
   authUrl.searchParams.set('client_id', clientId);
   authUrl.searchParams.set('response_type', 'code');
   authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-  authUrl.searchParams.set('scope', 'activity:write,activity:read_all');
-  authUrl.searchParams.set('approval_prompt', 'auto');
+  authUrl.searchParams.set('scope', 'activity:write,activity:read_all,profile:read_all');
+  authUrl.searchParams.set('approval_prompt', 'force');
 
   console.log('\n🔐 Opening Strava authorization page...');
   openBrowser(authUrl.toString());
@@ -219,18 +219,23 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 }
 
 // ---------------------------------------------------------------------------
-// GPX generation with HR, cadence, elevation
+// FIT generation with HR, cadence, elevation using @garmin/fitsdk
 // ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Encoder, Profile, Utils } = require('@garmin/fitsdk') as typeof import('@garmin/fitsdk');
+
+const SEMICIRCLE_PER_DEG = 2 ** 31 / 180;
 
 function randomBetween(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-function generateGpx(): { gpx: string; distanceKm: number; durationMin: number } {
+function generateFit(): { fitData: Buffer; distanceKm: number; durationMin: number } {
   const startLat = 48.135;
   const startLng = 11.58;
-  const startTime = new Date();
-  startTime.setMinutes(startTime.getMinutes() - 35);
+  const startDate = new Date();
+  startDate.setMinutes(startDate.getMinutes() - 35);
 
   const segmentKm = 1.25;
   const totalKm = segmentKm * 4;
@@ -248,31 +253,76 @@ function generateGpx(): { gpx: string; distanceKm: number; durationMin: number }
   let elev = 520 + randomBetween(-5, 5);
   let hr = 115;
   let cad = 78;
+  let hrSum = 0;
+  let hrMax = 0;
+  let cumDist = 0;
+  let prevLat = lat;
+  let prevLng = lng;
 
-  const points: string[] = [];
+  const startTime = Utils.convertDateToDateTime(startDate);
+  const localOffset = startDate.getTimezoneOffset() * -60;
+
+  const encoder = new Encoder();
+
+  encoder.onMesg(Profile.MesgNum.FILE_ID, {
+    type: 'activity',
+    manufacturer: 'development',
+    product: 0,
+    timeCreated: startTime,
+    serialNumber: 12345,
+  });
+
+  encoder.onMesg(Profile.MesgNum.DEVICE_INFO, {
+    deviceIndex: 'creator',
+    manufacturer: 'development',
+    product: 0,
+    productName: 'mAIcoach',
+    serialNumber: 12345,
+    softwareVersion: 1.0,
+    timestamp: startTime,
+  });
+
+  encoder.onMesg(Profile.MesgNum.EVENT, {
+    timestamp: startTime,
+    event: 'timer',
+    eventType: 'start',
+  });
+
+  let pointIndex = 0;
 
   function addPoint(i: number): void {
-    const t = new Date(startTime.getTime() + i * pointInterval * 1000);
     const progress = i / totalPoints;
 
     if (progress < 0.1) hr = 115 + progress * 350;
     else if (progress < 0.85) hr = 148 + randomBetween(-5, 5) + progress * 15;
     else hr = 160 - (progress - 0.85) * 200 + randomBetween(-3, 3);
-    hr = Math.max(110, Math.min(185, Math.round(hr)));
+    hr = Math.max(110, Math.min(254, Math.round(hr)));
+    hrSum += hr;
+    if (hr > hrMax) hrMax = hr;
 
     cad = Math.round(82 + randomBetween(-3, 3) + (progress < 0.85 ? progress * 8 : -5));
     elev += randomBetween(-0.5, 0.5);
 
-    points.push(
-      `      <trkpt lat="${lat.toFixed(6)}" lon="${lng.toFixed(6)}">` +
-        `<ele>${elev.toFixed(1)}</ele>` +
-        `<time>${t.toISOString()}</time>` +
-        `<extensions><gpxtpx:TrackPointExtension>` +
-        `<gpxtpx:hr>${hr}</gpxtpx:hr>` +
-        `<gpxtpx:cad>${cad}</gpxtpx:cad>` +
-        `</gpxtpx:TrackPointExtension></extensions>` +
-        `</trkpt>`,
-    );
+    const dlat = (lat - prevLat) * 111000;
+    const dlng = (lng - prevLng) * 74300;
+    cumDist += Math.sqrt(dlat * dlat + dlng * dlng);
+    prevLat = lat;
+    prevLng = lng;
+
+    const speed = pointIndex > 0 ? cumDist / (pointIndex * pointInterval) : 0;
+
+    encoder.onMesg(Profile.MesgNum.RECORD, {
+      timestamp: startTime + i * pointInterval,
+      positionLat: Math.round(lat * SEMICIRCLE_PER_DEG),
+      positionLong: Math.round(lng * SEMICIRCLE_PER_DEG),
+      enhancedAltitude: elev,
+      distance: cumDist,
+      enhancedSpeed: speed,
+      heartRate: hr,
+      cadence: cad,
+    });
+
+    pointIndex++;
   }
 
   for (let i = 0; i < pointsPerSeg; i++) {
@@ -294,44 +344,73 @@ function generateGpx(): { gpx: string; distanceKm: number; durationMin: number }
     elev -= 0.15;
   }
 
-  const gpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1"
-     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
-     creator="mAIcoach-test" version="1.1">
-  <trk>
-    <name>Test Run ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</name>
-    <type>running</type>
-    <trkseg>
-${points.join('\n')}
-    </trkseg>
-  </trk>
-</gpx>`;
+  const endTime = startTime + totalSec;
+  const avgHr = Math.round(hrSum / (pointsPerSeg * 4));
 
-  return { gpx, distanceKm: totalKm, durationMin: Math.round(totalSec / 60) };
+  encoder.onMesg(Profile.MesgNum.EVENT, {
+    timestamp: endTime,
+    event: 'timer',
+    eventType: 'stop',
+  });
+
+  encoder.onMesg(Profile.MesgNum.LAP, {
+    messageIndex: 0,
+    timestamp: endTime,
+    startTime,
+    totalElapsedTime: totalSec,
+    totalTimerTime: totalSec,
+    totalDistance: totalKm * 1000,
+    avgHeartRate: avgHr,
+    maxHeartRate: hrMax,
+  });
+
+  encoder.onMesg(Profile.MesgNum.SESSION, {
+    messageIndex: 0,
+    timestamp: endTime,
+    startTime,
+    totalElapsedTime: totalSec,
+    totalTimerTime: totalSec,
+    totalDistance: totalKm * 1000,
+    sport: 'running',
+    subSport: 'generic',
+    firstLapIndex: 0,
+    numLaps: 1,
+    avgHeartRate: avgHr,
+    maxHeartRate: hrMax,
+  });
+
+  encoder.onMesg(Profile.MesgNum.ACTIVITY, {
+    timestamp: endTime,
+    numSessions: 1,
+    localTimestamp: endTime + localOffset,
+    totalTimerTime: totalSec,
+  });
+
+  const fitData = Buffer.from(encoder.close());
+  return { fitData, distanceKm: totalKm, durationMin: Math.round(totalSec / 60) };
 }
 
 // ---------------------------------------------------------------------------
-// Upload GPX to Strava
+// Upload FIT to Strava
 // ---------------------------------------------------------------------------
 
 async function uploadActivity(accessToken: string): Promise<void> {
-  const { gpx, distanceKm, durationMin } = generateGpx();
+  const { fitData, distanceKm, durationMin } = generateFit();
 
   console.log('\n🏃 Uploading test activity with GPS + HR + cadence...');
   console.log(`   Distance: ${distanceKm.toFixed(1)} km`);
   console.log(`   Duration: ~${durationMin} min`);
 
   const boundary = '----mAIcoachBoundary' + Date.now();
-  const fileName = 'test-run.gpx';
 
-  const bodyParts = [
-    `--${boundary}\r\nContent-Disposition: form-data; name="data_type"\r\n\r\ngpx`,
-    `--${boundary}\r\nContent-Disposition: form-data; name="activity_type"\r\n\r\nrun`,
-    `--${boundary}\r\nContent-Disposition: form-data; name="description"\r\n\r\nAuto-generated test with HR/cadence/GPS from mAIcoach script`,
-    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: application/gpx+xml\r\n\r\n${gpx}`,
-    `--${boundary}--`,
-  ];
-  const body = bodyParts.join('\r\n');
+  const preamble = Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="data_type"\r\n\r\nfit\r\n` +
+      `--${boundary}\r\nContent-Disposition: form-data; name="activity_type"\r\n\r\nrun\r\n` +
+      `--${boundary}\r\nContent-Disposition: form-data; name="description"\r\n\r\nAuto-generated test with HR/cadence/GPS from mAIcoach script\r\n` +
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="test-run.fit"\r\nContent-Type: application/octet-stream\r\n\r\n`,
+  );
+  const epilogue = Buffer.from(`\r\n--${boundary}--`);
+  const body = Buffer.concat([preamble, fitData, epilogue]);
 
   const res = await fetch('https://www.strava.com/api/v3/uploads', {
     method: 'POST',
@@ -391,7 +470,7 @@ async function uploadActivity(accessToken: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  console.log('🚀 Strava Test Activity Upload (GPX with HR + cadence)\n');
+  console.log('🚀 Strava Test Activity Upload (FIT with HR + cadence)\n');
 
   const env = loadEnv();
   const clientId = env['STRAVA_CLIENT_ID'];
