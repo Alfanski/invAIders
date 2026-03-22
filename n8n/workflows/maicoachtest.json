@@ -189,7 +189,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'You are a sports data analyst specializing in endurance training. Examine the workout data and produce a structured JSON analysis brief. Focus on identifying the workout type, key patterns in the data, and what a coach should focus their analysis on. Be specific and data-driven.' }, { role: 'user', content: $json.scoutPrompt }], temperature: 0.2, max_tokens: 2048, response_format: { type: 'json_object' } }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'qwen/qwen3-32b', messages: [{ role: 'system', content: 'You are a sports data analyst specializing in endurance training. Examine the workout data and produce a structured JSON analysis brief. Focus on identifying the workout type, key patterns in the data, and what a coach should focus their analysis on. Be specific and data-driven.' }, { role: 'user', content: $json.scoutPrompt }], temperature: 0.2, max_tokens: 2048, response_format: { type: 'json_object' } }) }}",
         "options": {
           "timeout": 30000
         }
@@ -236,7 +236,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: $json.systemPrompt }, { role: 'user', content: $json.analysisPrompt }], temperature: 0.3, max_tokens: 4096, response_format: { type: 'json_object' } }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'qwen/qwen3-32b', messages: [{ role: 'system', content: $json.systemPrompt }, { role: 'user', content: $json.analysisPrompt }], temperature: 0.3, max_tokens: 4096, response_format: { type: 'json_object' } }) }}",
         "options": {
           "timeout": 60000
         }
@@ -249,7 +249,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $json;\nconst text = resp.choices?.[0]?.message?.content || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = resp.model || 'llama-3.3-70b-versatile';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst tokenData = $('Get Token').first().json;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName: tokenData.athleteName, athleteEmail: tokenData.email || null, executiveSummary: analysis.executiveSummary || '' } }];"
+        "jsCode": "const resp = $json;\nconst text = resp.choices?.[0]?.message?.content || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = resp.model || 'qwen/qwen3-32b';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst tokenData = $('Get Token').first().json;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName: tokenData.athleteName, athleteEmail: tokenData.email || null, executiveSummary: analysis.executiveSummary || '' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

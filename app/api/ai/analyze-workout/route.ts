@@ -141,7 +141,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       body: JSON.stringify({
         secret,
         activityId: typedActivityId,
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3-32b',
         effortScore: result.data.analysis.effortScore,
         executiveSummary: result.data.analysis.executiveSummary,
         positives: result.data.analysis.positives,
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       meta: {
         toolCalls: result.data.toolCallCount,
         rounds: result.data.rounds,
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3-32b',
       },
     });
   } catch (err) {

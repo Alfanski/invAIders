@@ -3,7 +3,7 @@
 ## Overview
 
 AI fitness coaching app. Connects to Strava, auto-analyzes workouts via
-OpenAI-compatible LLM (Groq / Llama 3.3 70B by default), generates visual
+OpenAI-compatible LLM (Groq / Qwen3 32B by default), generates visual
 dashboards, and delivers voice debriefs via ElevenLabs.
 
 ## Stack
@@ -11,7 +11,7 @@ dashboards, and delivers voice debriefs via ElevenLabs.
 - **Frontend:** Next.js 14+ (App Router) on Vercel
 - **Backend/DB:** Convex (reactive, real-time subscriptions)
 - **Orchestration:** n8n (webhook/polling pipeline)
-- **AI:** OpenAI-compatible API via Groq (Llama 3.3 70B, coaching analysis, structured JSON)
+- **AI:** OpenAI-compatible API via Groq (Qwen3 32B, coaching analysis, structured JSON)
 - **Voice:** ElevenLabs TTS
 - **Data source:** Strava API v3 (OAuth 2.0)
 - **UI:** Custom glassmorphism design system + Tailwind CSS v4 + Recharts + Leaflet

@@ -5,7 +5,7 @@
  */
 
 const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'qwen/qwen3-32b';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';

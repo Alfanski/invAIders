@@ -1,6 +1,6 @@
 import { ChatOpenAI } from '@langchain/openai';
 
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'qwen/qwen3-32b';
 const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
 
 export interface ModelOptions {
