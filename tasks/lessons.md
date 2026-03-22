@@ -92,3 +92,10 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 **Correction**: Gemini free-tier quotas are enforced per Google account, not per GCP project. Enabling billing on a new GCP project and creating a new API key still yields a free-tier key if the account hasn't been upgraded to pay-as-you-go in AI Studio. Multiple API keys and projects were tried, all returning `RESOURCE_EXHAUSTED` with `FreeTier` limits.
 **Root cause**: Google AI Studio keys default to free tier regardless of GCP billing status. There is no visible UI toggle to switch an existing key from free to paid tier.
 **Fix applied**: Switched the entire AI stack to Groq (free tier with generous limits) using the OpenAI-compatible chat completions API. Created a provider-agnostic LLM client (`convex/lib/llm.ts`) that works with any OpenAI-compatible endpoint (Groq, OpenRouter, Together, etc.) via `LLM_BASE_URL` and `LLM_API_KEY` env vars. This makes future provider swaps trivial.
+
+## 2026-03-22 - Gotcha
+
+**Context**: GitHub Actions `deploy.yml` n8n workflow push step failing with `JSONDecodeError`
+**Correction**: The `deploy-n8n` job in `.github/workflows/deploy.yml` sent the raw workflow JSON (including `id` and `active` fields) to the n8n PUT API. The n8n API returned HTTP 400 (`request/body/id is read-only`), but `curl -sf` silently swallowed the error body, producing empty output that Python's JSON parser then crashed on.
+**Root cause**: When the `sync.sh` script was fixed to strip read-only fields (`id`, `active`, `createdAt`, `updatedAt`), the same fix was not applied to the inline script in `deploy.yml`. Two copies of the same logic drifted out of sync.
+**Fix applied**: Updated `deploy.yml` to (1) strip `id` and `active` via Python into a temp file before sending, (2) capture HTTP status code separately instead of relying on `curl -sf` piped to Python, and (3) use `::error::` annotations with the actual API error message on failure. **Rule**: when fixing a bug in one code path, grep for duplicate logic elsewhere (especially CI scripts vs local scripts) and apply the same fix.

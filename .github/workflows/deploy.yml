@@ -81,21 +81,44 @@ jobs:
             workflow_id=$(python3 -c "import json; print(json.load(open('$file')).get('id',''))" 2>/dev/null || echo "")
             name=$(python3 -c "import json; print(json.load(open('$file')).get('name','unknown'))" 2>/dev/null || echo "unknown")
 
+            # n8n API treats 'id' and 'active' as read-only; strip them from the request body
+            tmpfile=$(mktemp)
+            python3 -c "
+          import json
+          d = json.load(open('$file'))
+          for k in ['id', 'active']:
+              d.pop(k, None)
+          json.dump(d, open('$tmpfile', 'w'))
+          "
+
             if [ -n "$workflow_id" ]; then
               echo "Updating workflow '$name' (id: $workflow_id)..."
-              curl -sf -X PUT \
+              http_code=$(curl -s -o /tmp/n8n_resp.json -w "%{http_code}" -X PUT \
                 -H "X-N8N-API-KEY: $N8N_API_KEY" \
                 -H "Content-Type: application/json" \
-                -d @"$file" \
-                "${N8N_BASE_URL}/api/v1/workflows/${workflow_id}" \
-                | python3 -c "import json,sys; print('  Updated:', json.load(sys.stdin).get('id','?'))"
+                -d @"$tmpfile" \
+                "${N8N_BASE_URL}/api/v1/workflows/${workflow_id}")
+              if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+                echo "  Updated: $workflow_id"
+              else
+                echo "::error::Failed to update workflow '$name' (HTTP $http_code): $(cat /tmp/n8n_resp.json)"
+                rm -f "$tmpfile"
+                exit 1
+              fi
             else
               echo "Creating workflow '$name'..."
-              curl -sf -X POST \
+              http_code=$(curl -s -o /tmp/n8n_resp.json -w "%{http_code}" -X POST \
                 -H "X-N8N-API-KEY: $N8N_API_KEY" \
                 -H "Content-Type: application/json" \
-                -d @"$file" \
-                "${N8N_BASE_URL}/api/v1/workflows" \
-                | python3 -c "import json,sys; print('  Created:', json.load(sys.stdin).get('id','?'))"
+                -d @"$tmpfile" \
+                "${N8N_BASE_URL}/api/v1/workflows")
+              if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+                echo "  Created: $(python3 -c "import json; print(json.load(open('/tmp/n8n_resp.json')).get('id','?'))")"
+              else
+                echo "::error::Failed to create workflow '$name' (HTTP $http_code): $(cat /tmp/n8n_resp.json)"
+                rm -f "$tmpfile"
+                exit 1
+              fi
             fi
+            rm -f "$tmpfile"
           done
