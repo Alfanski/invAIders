@@ -14,6 +14,7 @@ export const completeOAuth = internalAction({
     sex: v.optional(v.union(v.literal('M'), v.literal('F'))),
     weightKg: v.optional(v.number()),
     measurementPreference: v.optional(v.union(v.literal('feet'), v.literal('meters'))),
+    email: v.optional(v.string()),
     accessToken: v.string(),
     refreshToken: v.string(),
     expiresAt: v.number(),
@@ -36,6 +37,7 @@ export const completeOAuth = internalAction({
       ...(args.measurementPreference !== undefined
         ? { measurementPreference: args.measurementPreference }
         : {}),
+      ...(args.email !== undefined ? { email: args.email } : {}),
     });
 
     console.log(

@@ -13,6 +13,7 @@ export const upsertFromStrava = internalMutation({
     sex: v.optional(v.union(v.literal('M'), v.literal('F'))),
     weightKg: v.optional(v.number()),
     measurementPreference: v.optional(v.union(v.literal('feet'), v.literal('meters'))),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -32,6 +33,7 @@ export const upsertFromStrava = internalMutation({
       ...(args.measurementPreference !== undefined
         ? { measurementPreference: args.measurementPreference }
         : {}),
+      ...(args.email !== undefined ? { email: args.email } : {}),
     };
 
     if (existing) {

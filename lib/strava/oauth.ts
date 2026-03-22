@@ -46,6 +46,7 @@ export interface StravaAthlete {
   sex: 'M' | 'F' | null;
   weight: number | null;
   measurement_preference: 'feet' | 'meters';
+  email?: string;
 }
 
 export async function exchangeCode(code: string): Promise<StravaTokenResponse> {

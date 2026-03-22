@@ -59,13 +59,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         accessToken: tokenResponse.access_token,
         refreshToken: tokenResponse.refresh_token,
         expiresAt: tokenResponse.expires_at,
-        scope: 'read,read_all,activity:read_all',
+        scope: 'read,read_all,profile:read_all,activity:read_all',
         ...(athlete.firstname ? { firstName: athlete.firstname } : {}),
         ...(athlete.lastname ? { lastName: athlete.lastname } : {}),
         ...(athlete.profile_medium ? { profileMediumUrl: athlete.profile_medium } : {}),
         ...(athlete.profile ? { profileUrl: athlete.profile } : {}),
         ...(athlete.sex != null ? { sex: athlete.sex } : {}),
         ...(athlete.weight != null ? { weightKg: athlete.weight } : {}),
+        ...(athlete.email ? { email: athlete.email } : {}),
       }),
     });
     if (!oauthResponse.ok) {

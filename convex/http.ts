@@ -302,6 +302,7 @@ http.route({
       sex?: 'M' | 'F';
       weightKg?: number;
       measurementPreference?: 'feet' | 'meters';
+      email?: string;
       accessToken: string;
       refreshToken: string;
       expiresAt: number;
@@ -324,6 +325,7 @@ http.route({
         ...(body.measurementPreference !== undefined
           ? { measurementPreference: body.measurementPreference }
           : {}),
+        ...(body.email !== undefined ? { email: body.email } : {}),
         ...(body.scope !== undefined ? { scope: body.scope } : {}),
       });
       return jsonOk(result);
