@@ -249,7 +249,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $json;\nconst text = resp.choices?.[0]?.message?.content || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = resp.model || 'llama-3.3-70b-versatile';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
+        "jsCode": "const resp = $json;\nconst text = resp.choices?.[0]?.message?.content || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = resp.model || 'llama-3.3-70b-versatile';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst tokenData = $('Get Token').first().json;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName: tokenData.athleteName, athleteEmail: tokenData.email || null, executiveSummary: analysis.executiveSummary || '' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -297,6 +297,65 @@
       "position": [4000, 300],
       "id": "22334455-6677-4889-9aab-bccddee0ff11",
       "name": "Pipeline Complete"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $('Code Parse Analysis').first().json;\nconst analysis = parsed.analysis || {};\nconst athleteName = parsed.athleteName || 'Athlete';\nconst athleteEmail = parsed.athleteEmail || null;\nconst activityName = parsed.activityName || 'Workout';\nconst effortScore = analysis.effortScore || 5;\nconst executiveSummary = analysis.executiveSummary || '';\nconst positives = analysis.positives || [];\nconst improvements = analysis.improvements || [];\nconst nextSession = analysis.nextSession || null;\n\nconst effortColor = effortScore <= 3 ? '#22c55e' : effortScore <= 6 ? '#eab308' : effortScore <= 8 ? '#f97316' : '#ef4444';\nconst effortBarWidth = Math.round(effortScore * 10);\n\nlet positivesHtml = '';\nfor (const p of positives) {\n  positivesHtml += '<tr><td style=\"padding:4px 0;vertical-align:top;width:24px;color:#22c55e;font-size:16px;\">&#10003;</td><td style=\"padding:4px 0;font-size:14px;color:#374151;\">' + p + '</td></tr>';\n}\n\nlet improvementsHtml = '';\nfor (const imp of improvements) {\n  improvementsHtml += '<tr><td style=\"padding:4px 0;vertical-align:top;width:24px;color:#f97316;font-size:14px;font-weight:bold;\">&#8250;</td><td style=\"padding:4px 0;font-size:14px;color:#374151;\">' + imp + '</td></tr>';\n}\n\nlet nextSessionHtml = '';\nif (nextSession) {\n  nextSessionHtml = '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-top:24px;\"><tr><td style=\"background:#f0f0ff;border-radius:12px;padding:20px;border-left:4px solid #6366f1;\"><p style=\"margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6366f1;font-weight:600;\">Next Session Recommendation</p><p style=\"margin:0 0 8px;font-size:16px;font-weight:600;color:#1f2937;\">' + nextSession.type + ' &middot; ' + nextSession.durationMin + ' min &middot; ' + nextSession.intensity + '</p><p style=\"margin:0;font-size:14px;color:#4b5563;line-height:1.5;\">' + nextSession.description + '</p></td></tr></table>';\n}\n\nconst html = '<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"></head><body style=\"margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#f3f4f6;padding:24px 0;\"><tr><td align=\"center\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);\">'\n+ '<tr><td style=\"background:linear-gradient(135deg,#4f46e5 0%,#6366f1 50%,#818cf8 100%);padding:32px 32px 28px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td><p style=\"margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;\">m<span style=\"color:#c7d2fe;\">AI</span>coach</p></td></tr><tr><td style=\"padding-top:16px;\"><p style=\"margin:0;font-size:20px;font-weight:600;color:#ffffff;\">' + activityName + '</p><p style=\"margin:4px 0 0;font-size:13px;color:#c7d2fe;\">Coach analysis ready for ' + athleteName + '</p></td></tr></table></td></tr>'\n+ '<tr><td style=\"padding:28px 32px 0;\"><p style=\"margin:0;font-size:14px;line-height:1.6;color:#374151;\">' + executiveSummary + '</p></td></tr>'\n+ '<tr><td style=\"padding:24px 32px 0;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td><p style=\"margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6b7280;font-weight:600;\">Effort Score</p></td><td style=\"text-align:right;\"><p style=\"margin:0 0 8px;font-size:20px;font-weight:700;color:' + effortColor + ';\">' + effortScore + '<span style=\"font-size:13px;font-weight:400;color:#9ca3af;\">/10</span></p></td></tr><tr><td colspan=\"2\"><div style=\"background:#e5e7eb;border-radius:6px;height:8px;overflow:hidden;\"><div style=\"background:' + effortColor + ';width:' + effortBarWidth + '%;height:8px;border-radius:6px;\"></div></div></td></tr></table></td></tr>'\n+ '<tr><td style=\"padding:24px 32px 0;\"><p style=\"margin:0 0 12px;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6b7280;font-weight:600;\">What Went Well</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">' + positivesHtml + '</table></td></tr>'\n+ '<tr><td style=\"padding:20px 32px 0;\"><p style=\"margin:0 0 12px;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6b7280;font-weight:600;\">Areas to Improve</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">' + improvementsHtml + '</table></td></tr>'\n+ '<tr><td style=\"padding:0 32px;\">' + nextSessionHtml + '</td></tr>'\n+ '<tr><td style=\"padding:28px 32px;\"><table cellpadding=\"0\" cellspacing=\"0\" style=\"margin:0 auto;\"><tr><td style=\"background:#6366f1;border-radius:8px;\"><a href=\"https://maicoach.vercel.app/dashboard\" target=\"_blank\" style=\"display:inline-block;padding:14px 36px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;\">View Full Analysis</a></td></tr></table></td></tr>'\n+ '<tr><td style=\"background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;\"><p style=\"margin:0;font-size:12px;color:#9ca3af;\">Powered by mAIcoach &middot; Your AI coaching assistant</p></td></tr>'\n+ '</table></td></tr></table></body></html>';\n\nconst subject = activityName + ' -- Coach Analysis Ready';\n\nreturn [{ json: { html, subject, recipientEmail: athleteEmail, hasEmail: !!athleteEmail } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4250, 300],
+      "id": "a1e2m3a4-i5l6-4b7u-8i9l-d0e1r2h3t4m5",
+      "name": "Build Email HTML"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.hasEmail }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [4500, 300],
+      "id": "b2f3g4h5-i6j7-4k8l-9m0n-o1p2q3r4s5t6",
+      "name": "Has Email?"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipientEmail }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [4750, 200],
+      "id": "c3d4e5f6-g7h8-4i9j-0k1l-m2n3o4p5q6r7",
+      "name": "Send Notification Email",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "U8hhOBCnqNzIyntg",
+          "name": "Gmail account"
+        }
+      }
     },
     {
       "parameters": {},
@@ -384,6 +443,15 @@
     },
     "Store Analysis": {
       "main": [[{ "node": "Pipeline Complete", "type": "main", "index": 0 }]]
+    },
+    "Pipeline Complete": {
+      "main": [[{ "node": "Build Email HTML", "type": "main", "index": 0 }]]
+    },
+    "Build Email HTML": {
+      "main": [[{ "node": "Has Email?", "type": "main", "index": 0 }]]
+    },
+    "Has Email?": {
+      "main": [[{ "node": "Send Notification Email", "type": "main", "index": 0 }], []]
     },
     "Error Trigger": {
       "main": [[{ "node": "Log Error", "type": "main", "index": 0 }]]

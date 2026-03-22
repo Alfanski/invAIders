@@ -138,6 +138,7 @@ export const getFullProfile = query({
 
     return {
       _id: athlete._id,
+      email: athlete.email ?? null,
       firstName: athlete.firstName ?? null,
       lastName: athlete.lastName ?? null,
       profileMediumUrl: athlete.profileMediumUrl ?? null,
@@ -157,6 +158,7 @@ export const getFullProfile = query({
 export const updateProfile = mutation({
   args: {
     athleteId: v.id('athletes'),
+    email: v.optional(v.string()),
     goalText: v.optional(v.string()),
     weightKg: v.optional(v.number()),
     heightCm: v.optional(v.number()),

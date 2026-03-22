@@ -21,6 +21,7 @@ export default function ProfilePage(): ReactNode {
 }
 
 interface FormState {
+  email: string;
   goalText: string;
   weightKg: string;
   heightCm: string;
@@ -34,6 +35,7 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
   const updateProfile = useMutation(api.athletes.updateProfile);
 
   const [form, setForm] = useState<FormState>({
+    email: '',
     goalText: '',
     weightKg: '',
     heightCm: '',
@@ -48,6 +50,7 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
   useEffect(() => {
     if (!profile) return;
     setForm({
+      email: profile.email ?? '',
       goalText: profile.goalText ?? '',
       weightKg: profile.weightKg != null ? String(profile.weightKg) : '',
       heightCm: profile.heightCm != null ? String(profile.heightCm) : '',
@@ -68,6 +71,7 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
         const args: Parameters<typeof updateProfile>[0] = {
           athleteId,
           goalText: form.goalText,
+          ...(form.email ? { email: form.email } : {}),
           ...(form.coachPersonality ? { coachPersonality: form.coachPersonality } : {}),
         };
         if (form.weightKg) args.weightKg = Number(form.weightKg);
@@ -224,6 +228,22 @@ function ProfileContent({ athleteId }: Readonly<{ athleteId: Id<'athletes'> }>):
           <h3 className="text-[11px] font-medium uppercase tracking-widest text-glass-text-dim">
             Edit Profile
           </h3>
+
+          {/* Email for notifications */}
+          <label className="mt-4 block">
+            <span className="text-xs font-medium text-glass-text-muted">
+              Email (for workout notifications)
+            </span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => {
+                setForm((prev) => ({ ...prev, email: e.target.value }));
+              }}
+              placeholder="your@email.com"
+              className="mt-1 w-full rounded-xl bg-glass px-3 py-2 text-sm text-glass-text placeholder-glass-text-dim outline-none ring-1 ring-glass-border transition-shadow focus:ring-accent/40"
+            />
+          </label>
 
           {/* Goal */}
           <label className="mt-4 block">

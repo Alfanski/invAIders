@@ -14,6 +14,7 @@ export default defineSchema({
   athletes: defineTable({
     authSubject: v.string(),
     stravaAthleteId: v.string(),
+    email: v.optional(v.string()),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     profileMediumUrl: v.optional(v.string()),
