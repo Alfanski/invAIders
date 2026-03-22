@@ -49,6 +49,8 @@ function WorkoutContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode
 
   const analysis = useQuery(api.analyses.getForActivity, { activityId });
 
+  const voiceDebrief = useQuery(api.voiceDebriefs.getForActivity, { activityId });
+
   const athleteZones = useQuery(api.athleteZones.getLatestZones, { athleteId });
 
   const gearResult = useQuery(
@@ -154,6 +156,7 @@ function WorkoutContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNode
         altitude={altitude}
         distance={distance}
         analysis={toAnalysisData(analysis ?? null)}
+        voiceAudioUrl={voiceDebrief?.audioUrl}
         heartRateZones={heartRateZones}
         heartRateStream={heartRateStream}
         streamsLoading={streamsFetching}

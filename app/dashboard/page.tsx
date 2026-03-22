@@ -45,6 +45,11 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
     activeId ? { activityId: activeId } : 'skip',
   );
 
+  const voiceDebrief = useQuery(
+    api.voiceDebriefs.getForActivity,
+    activeId ? { activityId: activeId } : 'skip',
+  );
+
   const athleteZones = useQuery(api.athleteZones.getLatestZones, { athleteId });
 
   const gearResult = useQuery(
@@ -152,6 +157,7 @@ function DashboardContent({ athleteId }: { athleteId: Id<'athletes'> }): ReactNo
         altitude={altitude}
         distance={distance}
         analysis={toAnalysisData(analysis ?? null)}
+        voiceAudioUrl={voiceDebrief?.audioUrl}
         heartRateZones={heartRateZones}
         heartRateStream={heartRateStream}
         streamsLoading={streamsFetching}

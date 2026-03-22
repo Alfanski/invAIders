@@ -40,6 +40,10 @@ export default defineConfig(
       ],
       '@typescript-eslint/prefer-readonly': 'error',
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      '@typescript-eslint/dot-notation': [
+        'error',
+        { allowIndexSignaturePropertyAccess: true },
+      ],
     },
   },
   {

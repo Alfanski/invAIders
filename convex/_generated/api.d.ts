@@ -31,6 +31,7 @@ import type * as strava from "../strava.js";
 import type * as stravaPollState from "../stravaPollState.js";
 import type * as stravaSync from "../stravaSync.js";
 import type * as stravaTokens from "../stravaTokens.js";
+import type * as voiceDebriefs from "../voiceDebriefs.js";
 import type * as weeklyAnalyses from "../weeklyAnalyses.js";
 
 import type {
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   stravaPollState: typeof stravaPollState;
   stravaSync: typeof stravaSync;
   stravaTokens: typeof stravaTokens;
+  voiceDebriefs: typeof voiceDebriefs;
   weeklyAnalyses: typeof weeklyAnalyses;
 }>;
 

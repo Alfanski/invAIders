@@ -125,9 +125,11 @@ Env vars required on the Vercel project:
 1. Strava webhook/poll detects new activity
 2. n8n fetches full activity + streams from Strava API
 3. Streams downsampled (30s rolling avg, ~500 points)
-4. LLM (Groq/Llama 3.3) produces structured coaching JSON
-5. ElevenLabs generates voice debrief audio
-6. Everything stored in Convex, dashboard updates reactively
+4. LLM (Groq/Llama 3.3) produces structured coaching JSON (incl. `voiceSummary` text)
+5. Analysis + streams stored in Convex, status set to `generating_audio`
+6. If `voiceSummary` exists: ElevenLabs TTS generates MP3, uploaded to Convex file storage, `voiceDebriefs` record created, status set to `complete`
+7. If no `voiceSummary`: status set to `complete` via fallback
+8. Dashboard updates reactively; voice player renders when audio URL available
 
 ### Processing Status
 
@@ -210,6 +212,11 @@ npm run test:coverage # with 80% threshold enforcement
 - CTL/ATL/TSB (Fitness-Fatigue model) computed from TRIMP history
 - Activity type branching: Run vs Ride vs other (different metrics)
 - ElevenLabs audio downloaded to Convex file storage (temp URLs expire)
+- Voice debrief: n8n calls ElevenLabs TTS, uploads MP3 to Convex storage, saves `voiceDebriefs` record
+- Voice pipeline HTTP endpoints: `/api/pipeline/upload-url` (signed URL), `/api/pipeline/voice-debrief` (save record + complete)
+- Frontend `VoicePlayer` component in `components/audio/voice-player.tsx`, wired into `CoachingBreakdown`
+- ElevenLabs free tier: 10K chars/month (~5-7 debriefs), n8n variable: `ELEVENLABS_API_KEY`
+- Voice ID resolved dynamically per coach personality in "Resolve Voice" n8n Code node (motivator=Liam, analyst=Daniel, zen=River, drill-sergeant=Adam, buddy=Chris, default=Eric)
 
 ## Anti-Patterns
 

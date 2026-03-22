@@ -187,7 +187,8 @@ http.route({
 
 // ---------------------------------------------------------------------------
 // POST /api/pipeline/analysis
-// Stores analysis + downsampled streams, sets status to complete.
+// Stores analysis + downsampled streams, sets status to generating_audio
+// so the n8n voice pipeline can proceed with TTS generation.
 // ---------------------------------------------------------------------------
 
 http.route({
@@ -264,7 +265,7 @@ http.route({
 
       await ctx.runMutation(internal.activities.updateStatus, {
         activityId,
-        processingStatus: 'complete',
+        processingStatus: 'generating_audio',
       });
 
       const activity = await ctx.runQuery(internal.activities.getByDocId, { activityId });
@@ -274,7 +275,7 @@ http.route({
         });
       }
 
-      return jsonOk({ analysisId });
+      return jsonOk({ analysisId, activityId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       return jsonError(msg, 500);
@@ -381,6 +382,75 @@ http.route({
     } catch (err) {
       console.error('[save-analysis] error:', err);
       return jsonError('Internal error', 500);
+    }
+  }),
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/pipeline/upload-url
+// Returns a signed URL for uploading binary files to Convex storage.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: '/api/pipeline/upload-url',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    const body = (await req.json()) as { secret?: string };
+    if (!validateSecret(body.secret)) return jsonError('Unauthorized', 401);
+
+    try {
+      const uploadUrl = await ctx.storage.generateUploadUrl();
+      return jsonOk({ uploadUrl });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return jsonError(msg, 500);
+    }
+  }),
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/pipeline/voice-debrief
+// Saves a voice debrief record and sets activity status to complete.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: '/api/pipeline/voice-debrief',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    const body = (await req.json()) as {
+      secret?: string;
+      athleteId?: string;
+      activityId?: string;
+      storageId?: string;
+      scriptText?: string;
+      durationSec?: number;
+    };
+    if (!validateSecret(body.secret)) return jsonError('Unauthorized', 401);
+    if (!body.athleteId || !body.activityId || !body.storageId) {
+      return jsonError('athleteId, activityId, and storageId required', 400);
+    }
+
+    const activityId = body.activityId as Id<'activities'>;
+
+    try {
+      const debriefId = await ctx.runMutation(internal.voiceDebriefs.saveDebrief, {
+        athleteId: body.athleteId as Id<'athletes'>,
+        kind: 'activity',
+        activityId,
+        storageId: body.storageId as Id<'_storage'>,
+        ...(body.scriptText ? { scriptText: body.scriptText } : {}),
+        ...(body.durationSec != null ? { durationSec: body.durationSec } : {}),
+      });
+
+      await ctx.runMutation(internal.activities.updateStatus, {
+        activityId,
+        processingStatus: 'complete',
+      });
+
+      return jsonOk({ debriefId });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return jsonError(msg, 500);
     }
   }),
 });

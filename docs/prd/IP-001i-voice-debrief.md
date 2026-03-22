@@ -1,6 +1,6 @@
 # IP-001i: Voice Debrief
 
-**Status:** Draft
+**Status:** Implemented (MVP)
 **Parent:** [IP-001-coachagent-mvp.md](IP-001-coachagent-mvp.md)
 **PRD Section:** 1.6
 

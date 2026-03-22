@@ -36,6 +36,7 @@ interface WorkoutViewProps {
   altitude?: readonly number[] | undefined;
   distance?: readonly number[] | undefined;
   analysis?: AnalysisData | null | undefined;
+  voiceAudioUrl?: string | null | undefined;
   heartRateZones?: readonly HeartRateZone[] | undefined;
   heartRateStream?: readonly number[] | undefined;
   streamsLoading?: boolean | undefined;
@@ -106,6 +107,7 @@ export function WorkoutView({
   altitude,
   distance,
   analysis,
+  voiceAudioUrl,
   heartRateZones,
   heartRateStream,
   streamsLoading = false,
@@ -215,7 +217,7 @@ export function WorkoutView({
 
       {/* AI coaching -- full breakdown or simple fallback */}
       {analysis ? (
-        <CoachingBreakdown analysis={analysis} />
+        <CoachingBreakdown analysis={analysis} voiceAudioUrl={voiceAudioUrl} />
       ) : (
         <section className="glass-panel border-accent/20 p-5">
           <div className="flex items-start gap-3">

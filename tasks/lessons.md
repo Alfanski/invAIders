@@ -134,3 +134,17 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 **Correction**: The `deploy-n8n` job in `.github/workflows/deploy.yml` sent the raw workflow JSON (including `id` and `active` fields) to the n8n PUT API. The n8n API returned HTTP 400 (`request/body/id is read-only`), but `curl -sf` silently swallowed the error body, producing empty output that Python's JSON parser then crashed on.
 **Root cause**: When the `sync.sh` script was fixed to strip read-only fields (`id`, `active`, `createdAt`, `updatedAt`), the same fix was not applied to the inline script in `deploy.yml`. Two copies of the same logic drifted out of sync.
 **Fix applied**: Updated `deploy.yml` to (1) strip `id` and `active` via Python into a temp file before sending, (2) capture HTTP status code separately instead of relying on `curl -sf` piped to Python, and (3) use `::error::` annotations with the actual API error message on failure. **Rule**: when fixing a bug in one code path, grep for duplicate logic elsewhere (especially CI scripts vs local scripts) and apply the same fix.
+
+## 2026-03-22 - Pattern
+
+**Context**: Implementing voice debrief pipeline (ElevenLabs TTS via n8n -> Convex file storage -> frontend playback)
+**Correction**: N/A (new implementation pattern)
+**Root cause**: N/A
+**Fix applied**: Documented the voice debrief architecture:
+
+1. n8n pipeline: after Store Analysis, check for `voiceSummary` -> ElevenLabs TTS -> upload MP3 to Convex storage -> save `voiceDebriefs` record
+2. Convex: `/api/pipeline/upload-url` returns signed upload URL, `/api/pipeline/voice-debrief` saves record + sets status complete
+3. Analysis endpoint now sets `generating_audio` instead of `complete` to allow voice pipeline to run
+4. Graceful degradation: if no `voiceSummary`, fallback path sets status to `complete` directly
+5. Binary data flow in n8n: Get Upload URL first (stores URL), then ElevenLabs TTS (returns binary), then Upload Audio references URL from a prior node via `$('Get Upload URL').first().json.uploadUrl`
+6. ElevenLabs free tier: 10K chars/month, variables `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` as n8n Cloud variables

@@ -3,12 +3,17 @@
 import type { ReactNode } from 'react';
 
 import type { AnalysisData } from '@/types/dashboard';
+import { VoicePlayer } from '@/components/audio/voice-player';
 
 interface CoachingBreakdownProps {
   analysis: AnalysisData;
+  voiceAudioUrl?: string | null | undefined;
 }
 
-export function CoachingBreakdown({ analysis }: Readonly<CoachingBreakdownProps>): ReactNode {
+export function CoachingBreakdown({
+  analysis,
+  voiceAudioUrl,
+}: Readonly<CoachingBreakdownProps>): ReactNode {
   return (
     <section className="glass-panel space-y-5 border border-accent/20 p-5">
       <div className="flex items-start gap-3">
@@ -46,6 +51,8 @@ export function CoachingBreakdown({ analysis }: Readonly<CoachingBreakdownProps>
           </div>
         )}
       </div>
+
+      {voiceAudioUrl && <VoicePlayer audioUrl={voiceAudioUrl} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {analysis.positives.length > 0 && (
