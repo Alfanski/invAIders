@@ -1,16 +1,16 @@
-import { ConvexHttpClient } from 'convex/browser';
 import { cookies } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { api } from '@/convex/_generated/api';
 import { SESSION_COOKIE_NAME, STRAVA_OAUTH_STATE_COOKIE } from '@/lib/strava/constants';
 import { createSessionToken, sessionCookieOptions } from '@/lib/session';
 import { exchangeCode } from '@/lib/strava/oauth';
 
-function getConvexClient(): ConvexHttpClient {
-  const url = process.env['CONVEX_URL'];
-  if (!url) throw new Error('CONVEX_URL is not set');
-  return new ConvexHttpClient(url);
+function getConvexSiteUrl(): string {
+  const siteUrl = process.env['CONVEX_SITE_URL'];
+  if (siteUrl) return siteUrl;
+  const deployUrl = process.env['CONVEX_URL'] ?? process.env['NEXT_PUBLIC_CONVEX_URL'];
+  if (!deployUrl) throw new Error('CONVEX_SITE_URL or CONVEX_URL must be set');
+  return deployUrl.replace('.cloud', '.site');
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -46,22 +46,33 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       tokenResponse.access_token.slice(0, 8),
     );
 
-    const convex = getConvexClient();
-    console.log('[strava-callback] calling completeOAuth...');
-    const result = (await convex.action(api.strava.completeOAuth, {
-      stravaAthleteId: String(athlete.id),
-      measurementPreference: athlete.measurement_preference,
-      accessToken: tokenResponse.access_token,
-      refreshToken: tokenResponse.refresh_token,
-      expiresAt: tokenResponse.expires_at,
-      scope: 'read,read_all,activity:read_all',
-      ...(athlete.firstname ? { firstName: athlete.firstname } : {}),
-      ...(athlete.lastname ? { lastName: athlete.lastname } : {}),
-      ...(athlete.profile_medium ? { profileMediumUrl: athlete.profile_medium } : {}),
-      ...(athlete.profile ? { profileUrl: athlete.profile } : {}),
-      ...(athlete.sex != null ? { sex: athlete.sex } : {}),
-      ...(athlete.weight != null ? { weightKg: athlete.weight } : {}),
-    })) as { athleteId: string };
+    const siteUrl = getConvexSiteUrl();
+    const secret = process.env['CONVEX_WEBHOOK_SECRET'];
+    console.log('[strava-callback] calling completeOAuth via HTTP...');
+    const oauthResponse = await fetch(`${siteUrl}/api/internal/complete-oauth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret,
+        stravaAthleteId: String(athlete.id),
+        measurementPreference: athlete.measurement_preference,
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        expiresAt: tokenResponse.expires_at,
+        scope: 'read,read_all,activity:read_all',
+        ...(athlete.firstname ? { firstName: athlete.firstname } : {}),
+        ...(athlete.lastname ? { lastName: athlete.lastname } : {}),
+        ...(athlete.profile_medium ? { profileMediumUrl: athlete.profile_medium } : {}),
+        ...(athlete.profile ? { profileUrl: athlete.profile } : {}),
+        ...(athlete.sex != null ? { sex: athlete.sex } : {}),
+        ...(athlete.weight != null ? { weightKg: athlete.weight } : {}),
+      }),
+    });
+    if (!oauthResponse.ok) {
+      const errBody = await oauthResponse.text();
+      throw new Error(`completeOAuth failed (${String(oauthResponse.status)}): ${errBody}`);
+    }
+    const result = (await oauthResponse.json()) as { athleteId: string };
     console.log('[strava-callback] completeOAuth returned athleteId:', result.athleteId);
 
     const sessionToken = createSessionToken(result.athleteId, String(athlete.id));

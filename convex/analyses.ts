@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 
 import { internal } from './_generated/api';
-import { action, internalMutation, query } from './_generated/server';
+import { internalAction, internalMutation, query } from './_generated/server';
 
 export const upsertForActivity = internalMutation({
   args: {
@@ -60,7 +60,7 @@ export const getForActivity = query({
   },
 });
 
-export const setProcessingStatus = action({
+export const setProcessingStatus = internalAction({
   args: {
     activityId: v.id('activities'),
     processingStatus: v.union(v.literal('analyzing'), v.literal('complete'), v.literal('error')),
@@ -75,7 +75,7 @@ export const setProcessingStatus = action({
   },
 });
 
-export const saveFromAgent = action({
+export const saveFromAgent = internalAction({
   args: {
     activityId: v.id('activities'),
     model: v.optional(v.string()),

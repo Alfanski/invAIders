@@ -20,18 +20,35 @@ function getConvexClient(): ConvexHttpClient {
   return new ConvexHttpClient(url);
 }
 
+function getConvexSiteUrl(): string {
+  const siteUrl = process.env['CONVEX_SITE_URL'];
+  if (siteUrl) return siteUrl;
+  const deployUrl = process.env['CONVEX_URL'] ?? process.env['NEXT_PUBLIC_CONVEX_URL'];
+  if (!deployUrl) throw new Error('CONVEX_SITE_URL or CONVEX_URL must be set');
+  return deployUrl.replace('.cloud', '.site');
+}
+
 async function setActivityStatus(
-  convex: ConvexHttpClient,
   activityId: Id<'activities'>,
   status: 'analyzing' | 'complete' | 'error',
   error?: string,
 ): Promise<void> {
   try {
-    await convex.action(api.analyses.setProcessingStatus, {
-      activityId,
-      processingStatus: status,
-      ...(error ? { processingError: error.slice(0, 500) } : {}),
+    const siteUrl = getConvexSiteUrl();
+    const secret = process.env['CONVEX_WEBHOOK_SECRET'];
+    const res = await fetch(`${siteUrl}/api/pipeline/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret,
+        activityId,
+        status,
+        ...(error ? { error: error.slice(0, 500) } : {}),
+      }),
     });
+    if (!res.ok) {
+      console.warn(`[analyze-workout] Status update returned ${String(res.status)}`);
+    }
   } catch (err) {
     console.warn(
       `[analyze-workout] Failed to set status=${status}: ${err instanceof Error ? err.message : String(err)}`,
@@ -41,11 +58,13 @@ async function setActivityStatus(
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const internalToken = process.env['INTERNAL_API_TOKEN'];
-  if (internalToken) {
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${internalToken}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!internalToken) {
+    console.error('[analyze-workout] INTERNAL_API_TOKEN is not configured');
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+  }
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${internalToken}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let body: AnalyzeRequestBody;
@@ -63,7 +82,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const convex = getConvexClient();
   const typedActivityId = activityId as Id<'activities'>;
 
-  await setActivityStatus(convex, typedActivityId, 'analyzing');
+  await setActivityStatus(typedActivityId, 'analyzing');
 
   let athleteName: string | undefined;
   let athleteGoal: string | undefined;
@@ -98,12 +117,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       `[analyze-workout] Agent error: code=${errorCode} phase=${result.error.phase} msg=${result.error.message}`,
     );
 
-    await setActivityStatus(
-      convex,
-      typedActivityId,
-      'error',
-      `${errorCode}: ${result.error.message}`,
-    );
+    await setActivityStatus(typedActivityId, 'error', `${errorCode}: ${result.error.message}`);
 
     return NextResponse.json(
       { error: errorCode, message: result.error.message, phase: result.error.phase },
@@ -116,36 +130,48 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   );
 
   try {
-    // eslint-disable-next-line @typescript-eslint/dot-notation
-    const saveResult = await convex.action(api['analyses']['saveFromAgent'], {
-      activityId: typedActivityId,
-      model: 'llama-3.3-70b-versatile',
-      effortScore: result.data.analysis.effortScore,
-      executiveSummary: result.data.analysis.executiveSummary,
-      positives: result.data.analysis.positives,
-      improvements: result.data.analysis.improvements,
-      ...(result.data.analysis.hrZoneAnalysis
-        ? { hrZoneAnalysis: result.data.analysis.hrZoneAnalysis }
-        : {}),
-      ...(result.data.analysis.splitAnalysis
-        ? { splitAnalysis: result.data.analysis.splitAnalysis }
-        : {}),
-      ...(result.data.analysis.nextSession
-        ? { nextSession: result.data.analysis.nextSession }
-        : {}),
-      ...(result.data.analysis.weatherNote
-        ? { weatherNote: result.data.analysis.weatherNote }
-        : {}),
-      ...(result.data.analysis.voiceSummary
-        ? { voiceSummary: result.data.analysis.voiceSummary }
-        : {}),
+    const siteUrl = getConvexSiteUrl();
+    const secret = process.env['CONVEX_WEBHOOK_SECRET'];
+    const saveResponse = await fetch(`${siteUrl}/api/internal/save-analysis`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret,
+        activityId: typedActivityId,
+        model: 'llama-3.3-70b-versatile',
+        effortScore: result.data.analysis.effortScore,
+        executiveSummary: result.data.analysis.executiveSummary,
+        positives: result.data.analysis.positives,
+        improvements: result.data.analysis.improvements,
+        ...(result.data.analysis.hrZoneAnalysis
+          ? { hrZoneAnalysis: result.data.analysis.hrZoneAnalysis }
+          : {}),
+        ...(result.data.analysis.splitAnalysis
+          ? { splitAnalysis: result.data.analysis.splitAnalysis }
+          : {}),
+        ...(result.data.analysis.nextSession
+          ? { nextSession: result.data.analysis.nextSession }
+          : {}),
+        ...(result.data.analysis.weatherNote
+          ? { weatherNote: result.data.analysis.weatherNote }
+          : {}),
+        ...(result.data.analysis.voiceSummary
+          ? { voiceSummary: result.data.analysis.voiceSummary }
+          : {}),
+      }),
     });
 
-    await setActivityStatus(convex, typedActivityId, 'complete');
+    if (!saveResponse.ok) {
+      const errText = await saveResponse.text();
+      throw new Error(`Save endpoint returned ${String(saveResponse.status)}: ${errText}`);
+    }
+
+    const saveResult = (await saveResponse.json()) as { analysisId: string };
+    await setActivityStatus(typedActivityId, 'complete');
 
     return NextResponse.json({
       status: 'ok',
-      analysisId: (saveResult as { analysisId: string }).analysisId,
+      analysisId: saveResult.analysisId,
       analysis: result.data.analysis,
       meta: {
         toolCalls: result.data.toolCallCount,
@@ -156,7 +182,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (err) {
     console.error('[analyze-workout] Failed to save analysis:', err);
     await setActivityStatus(
-      convex,
       typedActivityId,
       'error',
       `save_failed: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500),
@@ -165,7 +190,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       {
         error: 'save_failed',
         message: 'Analysis generated but failed to persist',
-        analysis: result.data.analysis,
       },
       { status: 500 },
     );

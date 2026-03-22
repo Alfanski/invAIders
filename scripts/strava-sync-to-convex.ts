@@ -267,26 +267,42 @@ async function main(): Promise<void> {
     `\nAthlete: ${athlete.firstname ?? ''} ${athlete.lastname ?? ''} (ID: ${athlete.id})`,
   );
 
-  // Step 2: Call completeOAuth on Convex (schedules backfill if not already done)
+  // Step 2: Call completeOAuth via Convex HTTP endpoint (schedules backfill if not already done)
+  const siteUrl = convexUrl.replace('.cloud', '.site');
+  const webhookSecret = env['CONVEX_WEBHOOK_SECRET'];
+  if (!webhookSecret) {
+    throw new Error('CONVEX_WEBHOOK_SECRET must be set in .env.local');
+  }
+
   const convex = new ConvexHttpClient(convexUrl);
 
-  console.log('\nCalling Convex completeOAuth to upsert athlete + tokens + trigger backfill...');
-  const result = await convex.action(api.strava.completeOAuth, {
-    stravaAthleteId: String(athlete.id),
-    ...(athlete.firstname ? { firstName: athlete.firstname } : {}),
-    ...(athlete.lastname ? { lastName: athlete.lastname } : {}),
-    ...(athlete.profile_medium ? { profileMediumUrl: athlete.profile_medium } : {}),
-    ...(athlete.profile ? { profileUrl: athlete.profile } : {}),
-    ...(athlete.sex === 'M' || athlete.sex === 'F' ? { sex: athlete.sex } : {}),
-    ...(athlete.weight ? { weightKg: athlete.weight } : {}),
-    ...(athlete.measurement_preference === 'feet' || athlete.measurement_preference === 'meters'
-      ? { measurementPreference: athlete.measurement_preference }
-      : {}),
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
-    expiresAt: tokens.expires_at,
-    scope: 'activity:read_all,profile:read_all',
+  console.log('\nCalling Convex completeOAuth via HTTP endpoint...');
+  const oauthResponse = await fetch(`${siteUrl}/api/internal/complete-oauth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      secret: webhookSecret,
+      stravaAthleteId: String(athlete.id),
+      ...(athlete.firstname ? { firstName: athlete.firstname } : {}),
+      ...(athlete.lastname ? { lastName: athlete.lastname } : {}),
+      ...(athlete.profile_medium ? { profileMediumUrl: athlete.profile_medium } : {}),
+      ...(athlete.profile ? { profileUrl: athlete.profile } : {}),
+      ...(athlete.sex === 'M' || athlete.sex === 'F' ? { sex: athlete.sex } : {}),
+      ...(athlete.weight ? { weightKg: athlete.weight } : {}),
+      ...(athlete.measurement_preference === 'feet' || athlete.measurement_preference === 'meters'
+        ? { measurementPreference: athlete.measurement_preference }
+        : {}),
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: tokens.expires_at,
+      scope: 'activity:read_all,profile:read_all',
+    }),
   });
+  if (!oauthResponse.ok) {
+    const errBody = await oauthResponse.text();
+    throw new Error(`completeOAuth failed (${oauthResponse.status}): ${errBody}`);
+  }
+  const result = (await oauthResponse.json()) as { athleteId: string };
 
   console.log(`\nDone! Convex athlete ID: ${result.athleteId}`);
   console.log('Backfill will run server-side on Convex (fetches up to 1000 activities).');

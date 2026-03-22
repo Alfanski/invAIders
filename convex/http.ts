@@ -282,4 +282,107 @@ http.route({
   }),
 });
 
+// ---------------------------------------------------------------------------
+// POST /api/internal/complete-oauth
+// Server-to-server endpoint for OAuth callback to create/update athlete.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: '/api/internal/complete-oauth',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    const body = (await req.json()) as {
+      secret?: string;
+      stravaAthleteId: string;
+      firstName?: string;
+      lastName?: string;
+      profileMediumUrl?: string;
+      profileUrl?: string;
+      sex?: 'M' | 'F';
+      weightKg?: number;
+      measurementPreference?: 'feet' | 'meters';
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+      scope?: string;
+    };
+    if (!validateSecret(body.secret)) return jsonError('Unauthorized', 401);
+
+    try {
+      const result = await ctx.runAction(internal.strava.completeOAuth, {
+        stravaAthleteId: body.stravaAthleteId,
+        accessToken: body.accessToken,
+        refreshToken: body.refreshToken,
+        expiresAt: body.expiresAt,
+        ...(body.firstName !== undefined ? { firstName: body.firstName } : {}),
+        ...(body.lastName !== undefined ? { lastName: body.lastName } : {}),
+        ...(body.profileMediumUrl !== undefined ? { profileMediumUrl: body.profileMediumUrl } : {}),
+        ...(body.profileUrl !== undefined ? { profileUrl: body.profileUrl } : {}),
+        ...(body.sex !== undefined ? { sex: body.sex } : {}),
+        ...(body.weightKg !== undefined ? { weightKg: body.weightKg } : {}),
+        ...(body.measurementPreference !== undefined
+          ? { measurementPreference: body.measurementPreference }
+          : {}),
+        ...(body.scope !== undefined ? { scope: body.scope } : {}),
+      });
+      return jsonOk(result);
+    } catch (err) {
+      console.error('[complete-oauth] error:', err);
+      return jsonError('Internal error', 500);
+    }
+  }),
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/internal/save-analysis
+// Server-to-server endpoint for the analysis agent to persist results.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: '/api/internal/save-analysis',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    const body = (await req.json()) as {
+      secret?: string;
+      activityId: string;
+      model?: string;
+      effortScore?: number;
+      executiveSummary: string;
+      positives: string[];
+      improvements: string[];
+      hrZoneAnalysis?: unknown;
+      splitAnalysis?: { trend: string; comment: string };
+      nextSession?: {
+        type: string;
+        durationMin: number;
+        intensity: string;
+        description: string;
+      };
+      weatherNote?: string;
+      voiceSummary?: string;
+    };
+    if (!validateSecret(body.secret)) return jsonError('Unauthorized', 401);
+
+    try {
+      const analysisId = await ctx.runMutation(internal.analyses.upsertForActivity, {
+        activityId: body.activityId as Id<'activities'>,
+        executiveSummary: body.executiveSummary,
+        positives: body.positives,
+        improvements: body.improvements,
+        ...(body.model !== undefined ? { model: body.model } : {}),
+        ...(body.effortScore !== undefined ? { effortScore: body.effortScore } : {}),
+        ...(body.hrZoneAnalysis !== undefined ? { hrZoneAnalysis: body.hrZoneAnalysis } : {}),
+        ...(body.splitAnalysis !== undefined ? { splitAnalysis: body.splitAnalysis } : {}),
+        ...(body.nextSession !== undefined ? { nextSession: body.nextSession } : {}),
+        ...(body.weatherNote !== undefined ? { weatherNote: body.weatherNote } : {}),
+        ...(body.voiceSummary !== undefined ? { voiceSummary: body.voiceSummary } : {}),
+      });
+      return jsonOk({ analysisId });
+    } catch (err) {
+      console.error('[save-analysis] error:', err);
+      return jsonError('Internal error', 500);
+    }
+  }),
+});
+
 export default http;

@@ -2,9 +2,9 @@ import { v } from 'convex/values';
 
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { action } from './_generated/server';
+import { internalAction } from './_generated/server';
 
-export const completeOAuth = action({
+export const completeOAuth = internalAction({
   args: {
     stravaAthleteId: v.string(),
     firstName: v.optional(v.string()),
