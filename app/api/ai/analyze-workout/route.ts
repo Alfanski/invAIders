@@ -119,7 +119,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // eslint-disable-next-line @typescript-eslint/dot-notation
     const saveResult = await convex.action(api['analyses']['saveFromAgent'], {
       activityId: typedActivityId,
-      model: 'gemini-2.5-flash',
+      model: 'llama-3.3-70b-versatile',
       effortScore: result.data.analysis.effortScore,
       executiveSummary: result.data.analysis.executiveSummary,
       positives: result.data.analysis.positives,
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       meta: {
         toolCalls: result.data.toolCallCount,
         rounds: result.data.rounds,
-        model: 'gemini-2.5-flash',
+        model: 'llama-3.3-70b-versatile',
       },
     });
   } catch (err) {

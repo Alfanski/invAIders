@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { workoutAnalysisSchema } from './gemini-analysis';
+import { workoutAnalysisSchema } from './workout-analysis';
 
 describe('workoutAnalysisSchema', () => {
   const validMinimal = {

@@ -177,10 +177,19 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $vars.GROQ_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.scoutPrompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: 'You are a sports data analyst specializing in endurance training. Examine the workout data and produce a structured JSON analysis brief. Focus on identifying the workout type, key patterns in the data, and what a coach should focus their analysis on. Be specific and data-driven.' }] } }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'You are a sports data analyst specializing in endurance training. Examine the workout data and produce a structured JSON analysis brief. Focus on identifying the workout type, key patterns in the data, and what a coach should focus their analysis on. Be specific and data-driven.' }, { role: 'user', content: $json.scoutPrompt }], temperature: 0.2, max_tokens: 2048, response_format: { type: 'json_object' } }) }}",
         "options": {
           "timeout": 30000
         }
@@ -189,11 +198,11 @@
       "typeVersion": 4.2,
       "position": [2500, 300],
       "id": "dd112233-4455-4667-8899-aabbccddeef0",
-      "name": "Scout Gemini"
+      "name": "Scout LLM"
     },
     {
       "parameters": {
-        "jsCode": "// Parse scout response\nconst scoutResp = $json;\nconst scoutText = scoutResp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet scout;\ntry { scout = JSON.parse(scoutText); } catch { scout = { workoutClassification: 'unknown', keyObservations: [], analysisDirectives: [] }; }\n\nconst activity = $('Fetch Activity').first().json;\nconst tokenData = $('Get Token').first().json;\nconst dsData = $('Code Downsample').first().json;\n\nconst distKm = (activity.distance / 1000).toFixed(2);\nconst durMin = Math.round(activity.moving_time / 60);\nconst ps = activity.distance > 0 ? Math.round(activity.moving_time / (activity.distance / 1000)) : 0;\nconst paceStr = Math.floor(ps/60) + ':' + String(ps%60).padStart(2,'0');\n\nconst systemPrompt = 'You are mAIcoach, an expert AI running and cycling coach. Analyze workout data with the insight of an experienced coach, providing specific, actionable feedback. Be encouraging but honest. Use data to support observations. Use metric units (km, min/km, bpm). Never fabricate data -- only reference numbers from the provided context.';\n\nlet prompt = 'Analyze this workout and return a JSON object with these exact fields:\\n';\nprompt += '- effortScore (integer 1-10)\\n';\nprompt += '- executiveSummary (2-3 sentences)\\n';\nprompt += '- positives (array of 2-4 short strings)\\n';\nprompt += '- improvements (array of 1-3 short strings)\\n';\nprompt += '- splitAnalysis (object with \"trend\" and \"comment\" strings, or null)\\n';\nprompt += '- nextSession (object with \"type\", \"durationMin\" number, \"intensity\", \"description\")\\n';\nprompt += '- voiceSummary (1-2 sentence audio-friendly summary)\\n\\n';\n\nprompt += '## Pre-Analysis Scout Brief\\n';\nprompt += '- Classification: ' + (scout.workoutClassification || 'N/A') + '\\n';\nprompt += '- Observations: ' + (scout.keyObservations || []).join('; ') + '\\n';\nprompt += '- Focus areas: ' + (scout.analysisDirectives || []).join('; ') + '\\n\\n';\n\nprompt += '## Workout Data\\n';\nprompt += '- Name: ' + activity.name + '\\n';\nprompt += '- Type: ' + activity.sport_type + '\\n';\nprompt += '- Distance: ' + distKm + ' km\\n';\nprompt += '- Duration: ' + durMin + ' min\\n';\nprompt += '- Avg Pace: ' + paceStr + ' /km\\n';\nprompt += '- Elevation: ' + (activity.total_elevation_gain || 0) + ' m\\n';\nif (activity.average_heartrate) prompt += '- Avg HR: ' + Math.round(activity.average_heartrate) + ' bpm\\n';\nif (activity.max_heartrate) prompt += '- Max HR: ' + Math.round(activity.max_heartrate) + ' bpm\\n';\nif (activity.average_cadence) prompt += '- Cadence: ' + Math.round(activity.average_cadence) + ' rpm\\n';\nif (activity.calories) prompt += '- Calories: ' + activity.calories + '\\n';\n\nif (dsData.hrDrift !== null && dsData.hrDrift !== undefined) {\n  prompt += '- HR Drift: ' + (dsData.hrDrift > 0 ? '+' : '') + dsData.hrDrift + ' bpm\\n';\n}\n\nif (activity.splits_metric && Array.isArray(activity.splits_metric)) {\n  prompt += '\\n## Splits\\n';\n  for (const s of activity.splits_metric) {\n    const splitPace = s.average_speed > 0 ? Math.round(1000 / s.average_speed) : 0;\n    prompt += 'Km ' + s.split + ': ' + Math.floor(splitPace/60) + ':' + String(splitPace%60).padStart(2,'0') + ' /km';\n    if (s.average_heartrate) prompt += ' (' + Math.round(s.average_heartrate) + ' bpm)';\n    prompt += '\\n';\n  }\n}\n\nprompt += '\\n## Athlete: ' + tokenData.athleteName + '\\n';\n\nreturn [{ json: { analysisPrompt: prompt, systemPrompt, scout } }];"
+        "jsCode": "// Parse scout response (OpenAI format)\nconst scoutResp = $json;\nconst scoutText = scoutResp.choices?.[0]?.message?.content || '{}';\nlet scout;\ntry { scout = JSON.parse(scoutText); } catch { scout = { workoutClassification: 'unknown', keyObservations: [], analysisDirectives: [] }; }\n\nconst activity = $('Fetch Activity').first().json;\nconst tokenData = $('Get Token').first().json;\nconst dsData = $('Code Downsample').first().json;\n\nconst distKm = (activity.distance / 1000).toFixed(2);\nconst durMin = Math.round(activity.moving_time / 60);\nconst ps = activity.distance > 0 ? Math.round(activity.moving_time / (activity.distance / 1000)) : 0;\nconst paceStr = Math.floor(ps/60) + ':' + String(ps%60).padStart(2,'0');\n\nconst systemPrompt = 'You are mAIcoach, an expert AI running and cycling coach. Analyze workout data with the insight of an experienced coach, providing specific, actionable feedback. Be encouraging but honest. Use data to support observations. Use metric units (km, min/km, bpm). Never fabricate data -- only reference numbers from the provided context.';\n\nlet prompt = 'Analyze this workout and return a JSON object with these exact fields:\\n';\nprompt += '- effortScore (integer 1-10)\\n';\nprompt += '- executiveSummary (2-3 sentences)\\n';\nprompt += '- positives (array of 2-4 short strings)\\n';\nprompt += '- improvements (array of 1-3 short strings)\\n';\nprompt += '- splitAnalysis (object with \"trend\" and \"comment\" strings, or null)\\n';\nprompt += '- nextSession (object with \"type\", \"durationMin\" number, \"intensity\", \"description\")\\n';\nprompt += '- voiceSummary (1-2 sentence audio-friendly summary)\\n\\n';\n\nprompt += '## Pre-Analysis Scout Brief\\n';\nprompt += '- Classification: ' + (scout.workoutClassification || 'N/A') + '\\n';\nprompt += '- Observations: ' + (scout.keyObservations || []).join('; ') + '\\n';\nprompt += '- Focus areas: ' + (scout.analysisDirectives || []).join('; ') + '\\n\\n';\n\nprompt += '## Workout Data\\n';\nprompt += '- Name: ' + activity.name + '\\n';\nprompt += '- Type: ' + activity.sport_type + '\\n';\nprompt += '- Distance: ' + distKm + ' km\\n';\nprompt += '- Duration: ' + durMin + ' min\\n';\nprompt += '- Avg Pace: ' + paceStr + ' /km\\n';\nprompt += '- Elevation: ' + (activity.total_elevation_gain || 0) + ' m\\n';\nif (activity.average_heartrate) prompt += '- Avg HR: ' + Math.round(activity.average_heartrate) + ' bpm\\n';\nif (activity.max_heartrate) prompt += '- Max HR: ' + Math.round(activity.max_heartrate) + ' bpm\\n';\nif (activity.average_cadence) prompt += '- Cadence: ' + Math.round(activity.average_cadence) + ' rpm\\n';\nif (activity.calories) prompt += '- Calories: ' + activity.calories + '\\n';\n\nif (dsData.hrDrift !== null && dsData.hrDrift !== undefined) {\n  prompt += '- HR Drift: ' + (dsData.hrDrift > 0 ? '+' : '') + dsData.hrDrift + ' bpm\\n';\n}\n\nif (activity.splits_metric && Array.isArray(activity.splits_metric)) {\n  prompt += '\\n## Splits\\n';\n  for (const s of activity.splits_metric) {\n    const splitPace = s.average_speed > 0 ? Math.round(1000 / s.average_speed) : 0;\n    prompt += 'Km ' + s.split + ': ' + Math.floor(splitPace/60) + ':' + String(splitPace%60).padStart(2,'0') + ' /km';\n    if (s.average_heartrate) prompt += ' (' + Math.round(s.average_heartrate) + ' bpm)';\n    prompt += '\\n';\n  }\n}\n\nprompt += '\\n## Athlete: ' + tokenData.athleteName + '\\n';\n\nreturn [{ json: { analysisPrompt: prompt, systemPrompt, scout } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -215,10 +224,19 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $vars.GROQ_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.analysisPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: 'application/json' }, systemInstruction: { parts: [{ text: $json.systemPrompt }] } }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: $json.systemPrompt }, { role: 'user', content: $json.analysisPrompt }], temperature: 0.3, max_tokens: 4096, response_format: { type: 'json_object' } }) }}",
         "options": {
           "timeout": 60000
         }
@@ -227,11 +245,11 @@
       "typeVersion": 4.2,
       "position": [3250, 300],
       "id": "ff112233-4455-4667-8899-aabbccddeef2",
-      "name": "Analysis Gemini"
+      "name": "Analysis LLM"
     },
     {
       "parameters": {
-        "jsCode": "const resp = $json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = 'gemini-2.5-flash';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
+        "jsCode": "const resp = $json;\nconst text = resp.choices?.[0]?.message?.content || '{}';\nlet analysis;\ntry { analysis = JSON.parse(text); } catch { analysis = { executiveSummary: 'Analysis parsing failed', positives: [], improvements: [], effortScore: 5 }; }\n\nanalysis.model = resp.model || 'llama-3.3-70b-versatile';\n\nconst activityId = $('Upsert Activity').first().json.activityId;\nconst downsampled = $('Code Downsample').first().json.downsampled;\nconst activity = $('Fetch Activity').first().json;\nconst stravaActivityId = $('Webhook').first().json.body.stravaActivityId;\nconst athleteName = $('Get Token').first().json.athleteName;\n\nreturn [{ json: { activityId, analysis, downsampled, activityName: activity.name, stravaActivityId, athleteName, executiveSummary: analysis.executiveSummary || '' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -347,18 +365,18 @@
       "main": [[{ "node": "Wait Before Scout", "type": "main", "index": 0 }]]
     },
     "Wait Before Scout": {
-      "main": [[{ "node": "Scout Gemini", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Scout LLM", "type": "main", "index": 0 }]]
     },
-    "Scout Gemini": {
+    "Scout LLM": {
       "main": [[{ "node": "Code Build Prompt", "type": "main", "index": 0 }]]
     },
     "Code Build Prompt": {
       "main": [[{ "node": "Wait Before Analysis", "type": "main", "index": 0 }]]
     },
     "Wait Before Analysis": {
-      "main": [[{ "node": "Analysis Gemini", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Analysis LLM", "type": "main", "index": 0 }]]
     },
-    "Analysis Gemini": {
+    "Analysis LLM": {
       "main": [[{ "node": "Code Parse Analysis", "type": "main", "index": 0 }]]
     },
     "Code Parse Analysis": {

@@ -2,14 +2,14 @@ import type { BaseMessage } from '@langchain/core/messages';
 import { type AIMessage, HumanMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
 import type { StructuredToolInterface } from '@langchain/core/tools';
 
-import { workoutAnalysisSchema } from '@/types/gemini-analysis';
-import type { WorkoutAnalysis } from '@/types/gemini-analysis';
+import { workoutAnalysisSchema } from '@/types/workout-analysis';
+import type { WorkoutAnalysis } from '@/types/workout-analysis';
 
 import {
   ACTIVITY_ANALYSIS_SYSTEM_PROMPT,
   buildActivityUserPrompt,
 } from '../prompts/activity-analysis';
-import { createGeminiModel } from './model';
+import { createModel } from './model';
 import { getAllWorkoutTools } from './tools/workout-tools';
 
 const MAX_TOOL_ROUNDS = 8;
@@ -17,10 +17,10 @@ const SCHEMA_RETRY_LIMIT = 1;
 
 export type AgentErrorCode =
   | 'langchain_tool_error'
-  | 'gemini_schema_invalid'
-  | 'gemini_timeout'
-  | 'gemini_invoke_error'
-  | 'gemini_empty_response'
+  | 'llm_schema_invalid'
+  | 'llm_timeout'
+  | 'llm_invoke_error'
+  | 'llm_empty_response'
   | 'max_rounds_exceeded'
   | 'strava_404_deleted';
 
@@ -45,7 +45,7 @@ export interface AgentError {
 export async function runWorkoutAgent(
   input: RunAgentInput,
 ): Promise<{ ok: true; data: AgentResult } | { ok: false; error: AgentError }> {
-  const model = createGeminiModel();
+  const model = createModel();
   const tools = getAllWorkoutTools();
   const toolMap = new Map<string, StructuredToolInterface>(tools.map((t) => [t.name, t]));
   const boundModel = model.bindTools(tools);
@@ -67,7 +67,7 @@ export async function runWorkoutAgent(
       return {
         ok: false,
         error: {
-          code: isTimeout ? 'gemini_timeout' : 'gemini_invoke_error',
+          code: isTimeout ? 'llm_timeout' : 'llm_invoke_error',
           message: msg,
           phase: 'invoke',
         },
@@ -83,7 +83,7 @@ export async function runWorkoutAgent(
         return {
           ok: false,
           error: {
-            code: 'gemini_empty_response',
+            code: 'llm_empty_response',
             message: 'Model returned an empty response with no tool calls',
             phase: 'parse',
           },
@@ -91,7 +91,7 @@ export async function runWorkoutAgent(
       }
 
       const result = parseAnalysis(text, totalToolCalls, round + 1);
-      if (!result.ok && result.error.code === 'gemini_schema_invalid') {
+      if (!result.ok && result.error.code === 'llm_schema_invalid') {
         return retryOnSchemaFailure(messages, boundModel, text, totalToolCalls, round + 1);
       }
       return result;
@@ -154,7 +154,7 @@ export async function runWorkoutAgent(
 
 async function retryOnSchemaFailure(
   messages: BaseMessage[],
-  boundModel: ReturnType<ReturnType<typeof createGeminiModel>['bindTools']>,
+  boundModel: ReturnType<ReturnType<typeof createModel>['bindTools']>,
   failedText: string,
   toolCallCount: number,
   currentRound: number,
@@ -177,7 +177,7 @@ async function retryOnSchemaFailure(
       return {
         ok: false,
         error: {
-          code: 'gemini_invoke_error',
+          code: 'llm_invoke_error',
           message: `Retry invoke failed: ${err instanceof Error ? err.message : String(err)}`,
           phase: 'invoke',
         },
@@ -195,7 +195,7 @@ async function retryOnSchemaFailure(
   return {
     ok: false,
     error: {
-      code: 'gemini_schema_invalid',
+      code: 'llm_schema_invalid',
       message: `Schema validation failed after ${String(SCHEMA_RETRY_LIMIT)} retries`,
       phase: 'parse',
     },
@@ -235,7 +235,7 @@ function parseAnalysis(
       return {
         ok: false,
         error: {
-          code: 'gemini_schema_invalid',
+          code: 'llm_schema_invalid',
           message: `Schema validation failed: ${result.error.message}`,
           phase: 'parse',
         },
@@ -250,7 +250,7 @@ function parseAnalysis(
     return {
       ok: false,
       error: {
-        code: 'gemini_schema_invalid',
+        code: 'llm_schema_invalid',
         message: `JSON parse failed: ${err instanceof Error ? err.message : String(err)}`,
         phase: 'parse',
       },

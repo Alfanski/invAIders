@@ -5,7 +5,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 
 import { COACH_CHAT_SYSTEM_PROMPT } from '../prompts/coach-chat';
 import type { ChatPromptContext } from '../prompts/coach-chat';
-import { createGeminiModel } from './model';
+import { createModel } from './model';
 import { getConvexClient } from './tools/convex-client';
 
 export interface ChatMessage {
@@ -80,9 +80,9 @@ async function prefetchAthleteContext(athleteId: string): Promise<string> {
 export async function runCoachChat(
   input: ChatInput,
 ): Promise<{ ok: true; data: ChatResult } | { ok: false; error: string }> {
-  let model: ReturnType<typeof createGeminiModel>;
+  let model: ReturnType<typeof createModel>;
   try {
-    model = createGeminiModel();
+    model = createModel();
   } catch (err) {
     return {
       ok: false,

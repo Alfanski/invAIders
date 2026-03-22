@@ -1,6 +1,7 @@
-import { ChatGoogle } from '@langchain/google/node';
+import { ChatOpenAI } from '@langchain/openai';
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
 
 export interface ModelOptions {
   model?: string | undefined;
@@ -8,16 +9,19 @@ export interface ModelOptions {
   maxOutputTokens?: number | undefined;
 }
 
-export function createGeminiModel(options: ModelOptions = {}): ChatGoogle {
-  const apiKey = process.env['GOOGLE_API_KEY'];
+export function createModel(options: ModelOptions = {}): ChatOpenAI {
+  const apiKey = process.env['GROQ_API_KEY'];
   if (!apiKey) {
-    throw new Error('GOOGLE_API_KEY environment variable is not set');
+    throw new Error('GROQ_API_KEY environment variable is not set');
   }
 
-  return new ChatGoogle({
+  const baseURL = process.env['LLM_BASE_URL'] ?? DEFAULT_BASE_URL;
+
+  return new ChatOpenAI({
     model: options.model ?? DEFAULT_MODEL,
     apiKey,
     ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
-    ...(options.maxOutputTokens !== undefined ? { maxOutputTokens: options.maxOutputTokens } : {}),
+    ...(options.maxOutputTokens !== undefined ? { maxTokens: options.maxOutputTokens } : {}),
+    configuration: { baseURL },
   });
 }

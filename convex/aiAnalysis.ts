@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 
 import { api, internal } from './_generated/api';
 import { action, internalAction } from './_generated/server';
-import { generateJSON, generateText, GeminiError } from './lib/gemini';
+import { generateJSON, generateText, LLMError } from './lib/llm';
 
 const COACH_SYSTEM_PROMPT = `You are mAIcoach, an expert AI running and cycling coach.
 You analyze workout data with the insight of an experienced coach, providing specific, actionable feedback.
@@ -127,7 +127,7 @@ ${hasExisting ? `## Previous Weekly Summary (refine and update with the new data
 
       console.log(`Generated weekly summary for ${args.athleteId}: ${weekStartLocal}`);
     } catch (err) {
-      const msg = err instanceof GeminiError ? err.message : String(err);
+      const msg = err instanceof LLMError ? err.message : String(err);
       console.error(`Weekly summary failed for ${args.athleteId}: ${msg}`);
     }
   },
@@ -214,7 +214,7 @@ ${lastActivity?.trimp ? `- Last activity TRIMP: ${String(Math.round(lastActivity
 
       console.log(`Generated daily plan for ${args.athleteId}`);
     } catch (err) {
-      const msg = err instanceof GeminiError ? err.message : String(err);
+      const msg = err instanceof LLMError ? err.message : String(err);
       console.error(`Daily plan failed for ${args.athleteId}: ${msg}`);
     }
   },
@@ -305,7 +305,7 @@ export const coachChat = action({
 
       return { response, error: null };
     } catch (err) {
-      const msg = err instanceof GeminiError ? err.message : String(err);
+      const msg = err instanceof LLMError ? err.message : String(err);
       console.error(`Coach chat failed: ${msg}`);
       return {
         response:

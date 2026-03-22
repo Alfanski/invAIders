@@ -2,15 +2,16 @@
 
 ## Overview
 
-AI fitness coaching app. Connects to Strava, auto-analyzes workouts via Gemini,
-generates visual dashboards, and delivers voice debriefs via ElevenLabs.
+AI fitness coaching app. Connects to Strava, auto-analyzes workouts via
+OpenAI-compatible LLM (Groq / Llama 3.3 70B by default), generates visual
+dashboards, and delivers voice debriefs via ElevenLabs.
 
 ## Stack
 
 - **Frontend:** Next.js 14+ (App Router) on Vercel
 - **Backend/DB:** Convex (reactive, real-time subscriptions)
 - **Orchestration:** n8n (webhook/polling pipeline)
-- **AI:** Gemini API (coaching analysis, structured JSON output)
+- **AI:** OpenAI-compatible API via Groq (Llama 3.3 70B, coaching analysis, structured JSON)
 - **Voice:** ElevenLabs TTS
 - **Data source:** Strava API v3 (OAuth 2.0)
 - **UI:** Custom glassmorphism design system + Tailwind CSS v4 + Recharts + Leaflet
@@ -38,9 +39,9 @@ generates visual dashboards, and delivers voice debriefs via ElevenLabs.
 
 ```
 Strava --> Vercel API route (webhook) --> n8n pipeline
-  n8n: fetch activity --> fetch streams --> downsample
-     --> Gemini (analysis) --> ElevenLabs (voice)
-     --> store all in Convex
+ n8n: fetch activity --> fetch streams --> downsample
+ --> LLM/Groq (analysis) --> ElevenLabs (voice)
+ --> store all in Convex
 
 Next.js dashboard <-- Convex (reactive subscriptions)
 ```
@@ -87,7 +88,7 @@ Two workflows in `.github/workflows/`:
 | `CONVEX_DEPLOY_KEY`      | Convex production deploy key |
 | `STRAVA_CLIENT_ID`       | Convex env var               |
 | `STRAVA_CLIENT_SECRET`   | Convex env var               |
-| `GEMINI_API_KEY`         | Convex env var               |
+| `GROQ_API_KEY`           | Convex env var (LLM)         |
 | `CONVEX_WEBHOOK_SECRET`  | Convex env var               |
 | `SESSION_SECRET`         | Convex env var               |
 | `ELEVENLABS_API_KEY`     | Convex env var               |
@@ -117,7 +118,7 @@ Env vars required on the Vercel project:
 1. Strava webhook/poll detects new activity
 2. n8n fetches full activity + streams from Strava API
 3. Streams downsampled (30s rolling avg, ~500 points)
-4. Gemini produces structured coaching JSON
+4. LLM (Groq/Llama 3.3) produces structured coaching JSON
 5. ElevenLabs generates voice debrief audio
 6. Everything stored in Convex, dashboard updates reactively
 

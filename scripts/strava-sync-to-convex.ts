@@ -166,8 +166,8 @@ async function authorize(clientId: string, clientSecret: string): Promise<Strava
   authUrl.searchParams.set('client_id', clientId);
   authUrl.searchParams.set('response_type', 'code');
   authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-  authUrl.searchParams.set('scope', 'activity:read_all,profile:read_all');
-  authUrl.searchParams.set('approval_prompt', 'auto');
+  authUrl.searchParams.set('scope', 'activity:write,activity:read_all,profile:read_all');
+  authUrl.searchParams.set('approval_prompt', 'force');
 
   console.log('\nOpening Strava authorization page...');
   openBrowser(authUrl.toString());

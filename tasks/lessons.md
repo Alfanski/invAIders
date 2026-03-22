@@ -85,3 +85,10 @@ curl -X POST "https://api.vercel.com/v10/projects/{projectId}/env?teamId={teamId
 **Correction**: The n8n public API PUT `/workflows/:id` returns `400: request/body/id is read-only` when the body includes `id` or `active` fields. Additionally, node-level settings (`onError`, `retryOnFail`, `maxTries`, `waitBetweenTries`) are silently stripped from the response.
 **Root cause**: The n8n OpenAPI schema marks `id` and `active` as read-only fields. These must be stripped before PUT requests. Node-level error/retry settings are not part of the schema and can only be set via the n8n UI. This was a known issue (GitHub #18574) partially fixed in v1.119.0 for `parameters`, but node-level settings like `onError` remain unsupported.
 **Fix applied**: Updated `sync.sh` `push_one_file()` to strip `id`, `active`, `createdAt`, `updatedAt` before PUT. For resilience without `onError`/`retryOnFail`, use workflow-level patterns instead: IF nodes to skip nodes that might fail (e.g., skip Fetch Streams for manual activities), and Wait nodes to space out rate-limited API calls.
+
+## 2026-03-21 - Gotcha
+
+**Context**: Using Google Gemini API for AI coaching analysis
+**Correction**: Gemini free-tier quotas are enforced per Google account, not per GCP project. Enabling billing on a new GCP project and creating a new API key still yields a free-tier key if the account hasn't been upgraded to pay-as-you-go in AI Studio. Multiple API keys and projects were tried, all returning `RESOURCE_EXHAUSTED` with `FreeTier` limits.
+**Root cause**: Google AI Studio keys default to free tier regardless of GCP billing status. There is no visible UI toggle to switch an existing key from free to paid tier.
+**Fix applied**: Switched the entire AI stack to Groq (free tier with generous limits) using the OpenAI-compatible chat completions API. Created a provider-agnostic LLM client (`convex/lib/llm.ts`) that works with any OpenAI-compatible endpoint (Groq, OpenRouter, Together, etc.) via `LLM_BASE_URL` and `LLM_API_KEY` env vars. This makes future provider swaps trivial.
